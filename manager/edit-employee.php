@@ -4,7 +4,7 @@ require_once '../includes/session-check.php';
 checkRole(['HR Manager']);
 require_once '../includes/functions.php';
 
-$eid = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$eid = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($eid <= 0) {
     redirectWith(BASE_URL . '/manager/employees.php', 'danger', 'Invalid employee ID.');
 }
@@ -55,11 +55,13 @@ if ($emerg) {
 $family = $conn->query("SELECT * FROM employee_family WHERE employee_id=$eid")->fetch_all(MYSQLI_ASSOC);
 foreach ($family as $m) {
     $pre = strtolower($m['member_type']);
-    if ($pre === 'mother') $pre = 'mother_maiden';
+    if ($pre === 'mother')
+        $pre = 'mother_maiden';
     $emp[$pre . '_surname'] = $m['surname'];
     $emp[$pre . '_first_name'] = $m['first_name'];
     $emp[$pre . '_middle_name'] = $m['middle_name'];
-    if (isset($m['name_extension'])) $emp[$pre . '_name_ext'] = $m['name_extension'];
+    if (isset($m['name_extension']))
+        $emp[$pre . '_name_ext'] = $m['name_extension'];
     $emp[$pre . '_occupation'] = $m['occupation'];
 }
 
@@ -156,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $hire_date = $_POST['hire_date'] ?? '';
     $job_title = trim($_POST['job_title'] ?? '');
     $department = trim($_POST['department'] ?? '');
-    $branch_id = !empty($_POST['branch_id']) ? (int)$_POST['branch_id'] : null;
+    $branch_id = !empty($_POST['branch_id']) ? (int) $_POST['branch_id'] : null;
     $employment_status = $_POST['employment_status'] ?? 'Regular';
     $employment_type = $_POST['employment_type'] ?? 'Full-time';
     $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -182,9 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $new_filename = null;
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = '../assets/img/employees/';
-        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        if (!is_dir($upload_dir))
+            mkdir($upload_dir, 0777, true);
         $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg','jpeg','png','gif'])) {
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
             $new_filename = uniqid('emp_') . '.' . $ext;
             if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
                 if (!empty($emp['profile_picture']) && file_exists($upload_dir . $emp['profile_picture'])) {
@@ -201,53 +204,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             date_of_birth=?, place_of_birth=?, gender=?, civil_status=?,
             hire_date=?, job_title=?, department=?, branch_id=?, 
             employment_status=?, employment_type=?, is_active=?";
-        
-        if ($new_filename) $sql .= ", profile_picture=?";
+
+        if ($new_filename)
+            $sql .= ", profile_picture=?";
         $sql .= " WHERE employee_id=?";
 
         $stmt = $conn->prepare($sql);
         $types = "ssssssssssssssi" . ($new_filename ? "s" : "") . "i";
         $params = [$first_name, $last_name, $middle_name, $name_extension, $date_of_birth, $place_of_birth, $gender, $civil_status, $hire_date, $job_title, $department, $branch_id, $employment_status, $employment_type, $is_active];
-        if ($new_filename) $params[] = $new_filename;
+        if ($new_filename)
+            $params[] = $new_filename;
         $params[] = $eid;
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $stmt->close();
 
         // Update 1:1 Tables (REPLACE INTO is safe for 1:1 extension tables)
-        
+
         // 1. Details
         $stmt = $conn->prepare("REPLACE INTO employee_details (employee_id, height_m, weight_kg, blood_type, citizenship) VALUES (?,?,?,?,?)");
         $stmt->bind_param("iddss", $eid, $height_m, $weight_kg, $blood_type, $citizenship);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 2. Gov IDs
         $stmt = $conn->prepare("REPLACE INTO employee_government_ids (employee_id, sss_number, philhealth_number, pagibig_number, tin_number) VALUES (?,?,?,?,?)");
         $stmt->bind_param("issss", $eid, $sss_number, $philhealth_number, $pagibig_number, $tin_number);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 3. Contacts
         $stmt = $conn->prepare("REPLACE INTO employee_contacts (employee_id, telephone_number, mobile_number, personal_email) VALUES (?,?,?,?)");
         $stmt->bind_param("isss", $eid, $telephone_number, $contact_number, $email);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 4. Addresses
         $conn->query("DELETE FROM employee_addresses WHERE employee_id = $eid");
         if (!empty($res_street) || !empty($res_city)) {
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Residential', ?,?,?,?,?,?,?)");
             $stmt->bind_param("isssssss", $eid, $res_house_no, $res_street, $res_subdivision, $res_barangay, $res_city, $res_province, $res_zip_code);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
         if (!empty($perm_street) || !empty($perm_city)) {
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Permanent', ?,?,?,?,?,?,?)");
             $stmt->bind_param("isssssss", $eid, $perm_house_no, $perm_street, $perm_subdivision, $perm_barangay, $perm_city, $perm_province, $perm_zip_code);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         // 5. Emergency
         $stmt = $conn->prepare("REPLACE INTO employee_emergency_contacts (employee_id, contact_name, relationship, contact_number) VALUES (?,?,?,?)");
         $stmt->bind_param("isss", $eid, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 6. Disclosures
         $stmt = $conn->prepare("REPLACE INTO employee_disclosures (
@@ -256,30 +267,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             has_been_separated, separation_details, is_pwd, pwd_details, is_solo_parent, solo_parent_details,
             has_recent_hospital, hospital_details, has_current_treatment, treatment_details
         ) VALUES (?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?)");
-        $stmt->bind_param("iisssssssssssssssss", 
-            $eid, $is_related_to_company, $related_details, $has_admin_offense, $admin_offense_details,
-            $has_criminal_charge, $criminal_charge_details, $has_criminal_conviction, $criminal_conviction_details,
-            $has_been_separated, $separation_details, $is_pwd, $pwd_details, $is_solo_parent, $solo_parent_details,
-            $has_recent_hospital, $hospital_details, $has_current_treatment, $treatment_details
+        $stmt->bind_param(
+            "iisssssssssssssssss",
+            $eid,
+            $is_related_to_company,
+            $related_details,
+            $has_admin_offense,
+            $admin_offense_details,
+            $has_criminal_charge,
+            $criminal_charge_details,
+            $has_criminal_conviction,
+            $criminal_conviction_details,
+            $has_been_separated,
+            $separation_details,
+            $is_pwd,
+            $pwd_details,
+            $is_solo_parent,
+            $solo_parent_details,
+            $has_recent_hospital,
+            $hospital_details,
+            $has_current_treatment,
+            $treatment_details
         );
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 7. Family (Parents/Spouse - Delete/Reload style like child tables)
         $conn->query("DELETE FROM employee_family WHERE employee_id = $eid");
         if (!empty($spouse_surname) || !empty($spouse_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, name_extension, occupation) VALUES (?, 'Spouse', ?,?,?,?,?)");
             $stmt->bind_param("isssss", $eid, $spouse_surname, $spouse_first_name, $spouse_middle_name, $spouse_name_ext, $spouse_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
         if (!empty($father_surname) || !empty($father_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, name_extension, occupation) VALUES (?, 'Father', ?,?,?,?,?)");
             $stmt->bind_param("isssss", $eid, $father_surname, $father_first_name, $father_middle_name, $father_name_ext, $father_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
         if (!empty($mother_maiden_surname) || !empty($mother_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, occupation) VALUES (?, 'Mother', ?,?,?,?)");
             $stmt->bind_param("issss", $eid, $mother_maiden_surname, $mother_first_name, $mother_middle_name, $mother_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         $conn->commit();
@@ -290,10 +321,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (true) { // Legacy wrapper to keep the rest of the file logic
         // Delete and re-insert child tables
-        $childTables = ['employee_children','employee_siblings','employee_education','employee_work_experience',
-            'employee_trainings','employee_voluntary_work','employee_eligibility','employee_skills',
-            'employee_recognitions','employee_memberships','employee_real_properties','employee_personal_properties',
-            'employee_liabilities','employee_references'];
+        $childTables = [
+            'employee_children',
+            'employee_siblings',
+            'employee_education',
+            'employee_work_experience',
+            'employee_trainings',
+            'employee_voluntary_work',
+            'employee_eligibility',
+            'employee_skills',
+            'employee_recognitions',
+            'employee_memberships',
+            'employee_real_properties',
+            'employee_personal_properties',
+            'employee_liabilities',
+            'employee_references'
+        ];
         foreach ($childTables as $tbl) {
             $conn->query("DELETE FROM $tbl WHERE employee_id = $eid");
         }
@@ -302,9 +345,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['child_first_name'])) {
             $cs = $conn->prepare("INSERT INTO employee_children (employee_id, surname, first_name, middle_name, date_of_birth) VALUES (?,?,?,?,?)");
             foreach ($_POST['child_first_name'] as $i => $cfn) {
-                if (empty(trim($cfn))) continue;
-                $a=$eid; $b=trim($_POST['child_surname'][$i]??''); $c=trim($cfn); $d=trim($_POST['child_middle_name'][$i]??''); $f=$_POST['child_dob'][$i]??null;
-                $cs->bind_param("issss",$a,$b,$c,$d,$f); $cs->execute();
+                if (empty(trim($cfn)))
+                    continue;
+                $a = $eid;
+                $b = trim($_POST['child_surname'][$i] ?? '');
+                $c = trim($cfn);
+                $d = trim($_POST['child_middle_name'][$i] ?? '');
+                $f = $_POST['child_dob'][$i] ?? null;
+                $cs->bind_param("issss", $a, $b, $c, $d, $f);
+                $cs->execute();
             }
             $cs->close();
         }
@@ -313,9 +362,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['sibling_first_name'])) {
             $ss = $conn->prepare("INSERT INTO employee_siblings (employee_id, surname, first_name, middle_name, date_of_birth) VALUES (?,?,?,?,?)");
             foreach ($_POST['sibling_first_name'] as $i => $sfn) {
-                if (empty(trim($sfn))) continue;
-                $a=$eid; $b=trim($_POST['sibling_surname'][$i]??''); $c=trim($sfn); $d=trim($_POST['sibling_middle_name'][$i]??''); $f=$_POST['sibling_dob'][$i]??null;
-                $ss->bind_param("issss",$a,$b,$c,$d,$f); $ss->execute();
+                if (empty(trim($sfn)))
+                    continue;
+                $a = $eid;
+                $b = trim($_POST['sibling_surname'][$i] ?? '');
+                $c = trim($sfn);
+                $d = trim($_POST['sibling_middle_name'][$i] ?? '');
+                $f = $_POST['sibling_dob'][$i] ?? null;
+                $ss->bind_param("issss", $a, $b, $c, $d, $f);
+                $ss->execute();
             }
             $ss->close();
         }
@@ -324,11 +379,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['edu_level'])) {
             $es = $conn->prepare("INSERT INTO employee_education (employee_id, education_level, school_name, degree_course, period_from, period_to, highest_level_units, year_graduated, honors_received) VALUES (?,?,?,?,?,?,?,?,?)");
             foreach ($_POST['edu_level'] as $i => $lvl) {
-                if (empty(trim($_POST['edu_school'][$i]??''))) continue;
-                $a=$eid; $b=trim($_POST['edu_school'][$i]); $c=trim($_POST['edu_degree'][$i]??'');
-                $d=$_POST['edu_from'][$i]??null; $f=$_POST['edu_to'][$i]??null;
-                $g=trim($_POST['edu_units'][$i]??''); $h=trim($_POST['edu_year_grad'][$i]??''); $j=trim($_POST['edu_honors'][$i]??'');
-                $es->bind_param("issssssss",$a,$lvl,$b,$c,$d,$f,$g,$h,$j); $es->execute();
+                if (empty(trim($_POST['edu_school'][$i] ?? '')))
+                    continue;
+                $a = $eid;
+                $b = trim($_POST['edu_school'][$i]);
+                $c = trim($_POST['edu_degree'][$i] ?? '');
+                $d = $_POST['edu_from'][$i] ?? null;
+                $f = $_POST['edu_to'][$i] ?? null;
+                $g = trim($_POST['edu_units'][$i] ?? '');
+                $h = trim($_POST['edu_year_grad'][$i] ?? '');
+                $j = trim($_POST['edu_honors'][$i] ?? '');
+                $es->bind_param("issssssss", $a, $lvl, $b, $c, $d, $f, $g, $h, $j);
+                $es->execute();
             }
             $es->close();
         }
@@ -337,12 +399,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['work_title'])) {
             $ws = $conn->prepare("INSERT INTO employee_work_experience (employee_id, date_from, date_to, job_title, company_name, monthly_salary, appointment_status, reason_for_leaving) VALUES (?,?,?,?,?,?,?,?)");
             foreach ($_POST['work_title'] as $i => $wt) {
-                if (empty(trim($wt))) continue;
-                $a=$eid; $b=$_POST['work_from'][$i]??null; $c=$_POST['work_to'][$i]??null;
-                $d=trim($wt); $f=trim($_POST['work_company'][$i]??'');
-                $g=!empty($_POST['work_salary'][$i])?(float)$_POST['work_salary'][$i]:null;
-                $h=trim($_POST['work_status'][$i]??''); $j=trim($_POST['work_reason'][$i]??'');
-                $ws->bind_param("issssdss",$a,$b,$c,$d,$f,$g,$h,$j); $ws->execute();
+                if (empty(trim($wt)))
+                    continue;
+                $a = $eid;
+                $b = $_POST['work_from'][$i] ?? null;
+                $c = $_POST['work_to'][$i] ?? null;
+                $d = trim($wt);
+                $f = trim($_POST['work_company'][$i] ?? '');
+                $g = !empty($_POST['work_salary'][$i]) ? (float) $_POST['work_salary'][$i] : null;
+                $h = trim($_POST['work_status'][$i] ?? '');
+                $j = trim($_POST['work_reason'][$i] ?? '');
+                $ws->bind_param("issssdss", $a, $b, $c, $d, $f, $g, $h, $j);
+                $ws->execute();
             }
             $ws->close();
         }
@@ -351,12 +419,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['training_title'])) {
             $ts = $conn->prepare("INSERT INTO employee_trainings (employee_id, date_from, date_to, training_title, training_type, no_of_hours, conducted_by) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['training_title'] as $i => $tt) {
-                if (empty(trim($tt))) continue;
-                $a=$eid; $b=$_POST['training_from'][$i]??null; $c=$_POST['training_to'][$i]??null;
-                $d=trim($tt); $f=trim($_POST['training_type'][$i]??'');
-                $g=!empty($_POST['training_hours'][$i])?(float)$_POST['training_hours'][$i]:null;
-                $h=trim($_POST['training_conducted'][$i]??'');
-                $ts->bind_param("issssds",$a,$b,$c,$d,$f,$g,$h); $ts->execute();
+                if (empty(trim($tt)))
+                    continue;
+                $a = $eid;
+                $b = $_POST['training_from'][$i] ?? null;
+                $c = $_POST['training_to'][$i] ?? null;
+                $d = trim($tt);
+                $f = trim($_POST['training_type'][$i] ?? '');
+                $g = !empty($_POST['training_hours'][$i]) ? (float) $_POST['training_hours'][$i] : null;
+                $h = trim($_POST['training_conducted'][$i] ?? '');
+                $ts->bind_param("issssds", $a, $b, $c, $d, $f, $g, $h);
+                $ts->execute();
             }
             $ts->close();
         }
@@ -365,12 +438,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['vol_org'])) {
             $vs = $conn->prepare("INSERT INTO employee_voluntary_work (employee_id, date_from, date_to, organization_name, organization_address, no_of_hours, position_nature) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['vol_org'] as $i => $vo) {
-                if (empty(trim($vo))) continue;
-                $a=$eid; $b=$_POST['vol_from'][$i]??null; $c=$_POST['vol_to'][$i]??null;
-                $d=trim($vo); $f=trim($_POST['vol_address'][$i]??'');
-                $g=!empty($_POST['vol_hours'][$i])?(float)$_POST['vol_hours'][$i]:null;
-                $h=trim($_POST['vol_position'][$i]??'');
-                $vs->bind_param("issssds",$a,$b,$c,$d,$f,$g,$h); $vs->execute();
+                if (empty(trim($vo)))
+                    continue;
+                $a = $eid;
+                $b = $_POST['vol_from'][$i] ?? null;
+                $c = $_POST['vol_to'][$i] ?? null;
+                $d = trim($vo);
+                $f = trim($_POST['vol_address'][$i] ?? '');
+                $g = !empty($_POST['vol_hours'][$i]) ? (float) $_POST['vol_hours'][$i] : null;
+                $h = trim($_POST['vol_position'][$i] ?? '');
+                $vs->bind_param("issssds", $a, $b, $c, $d, $f, $g, $h);
+                $vs->execute();
             }
             $vs->close();
         }
@@ -379,11 +457,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['elig_title'])) {
             $el = $conn->prepare("INSERT INTO employee_eligibility (employee_id, license_title, date_from, date_to, license_number, date_of_exam, place_of_exam) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['elig_title'] as $i => $et) {
-                if (empty(trim($et))) continue;
-                $a=$eid; $b=$_POST['elig_from'][$i]??null; $c=$_POST['elig_to'][$i]??null;
-                $d=trim($_POST['elig_number'][$i]??''); $f=$_POST['elig_exam_date'][$i]??null;
-                $g=trim($_POST['elig_exam_place'][$i]??'');
-                $el->bind_param("issssss",$a,$et,$b,$c,$d,$f,$g); $el->execute();
+                if (empty(trim($et)))
+                    continue;
+                $a = $eid;
+                $b = $_POST['elig_from'][$i] ?? null;
+                $c = $_POST['elig_to'][$i] ?? null;
+                $d = trim($_POST['elig_number'][$i] ?? '');
+                $f = $_POST['elig_exam_date'][$i] ?? null;
+                $g = trim($_POST['elig_exam_place'][$i] ?? '');
+                $el->bind_param("issssss", $a, $et, $b, $c, $d, $f, $g);
+                $el->execute();
             }
             $el->close();
         }
@@ -391,17 +474,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Re-insert skills, recognitions, memberships
         if (!empty($_POST['skill_name'])) {
             $sk = $conn->prepare("INSERT INTO employee_skills (employee_id, skill_name) VALUES (?,?)");
-            foreach ($_POST['skill_name'] as $s) { if(empty(trim($s)))continue; $a=$eid;$b=trim($s); $sk->bind_param("is",$a,$b); $sk->execute(); }
+            foreach ($_POST['skill_name'] as $s) {
+                if (empty(trim($s)))
+                    continue;
+                $a = $eid;
+                $b = trim($s);
+                $sk->bind_param("is", $a, $b);
+                $sk->execute();
+            }
             $sk->close();
         }
         if (!empty($_POST['recognition_title'])) {
             $rc = $conn->prepare("INSERT INTO employee_recognitions (employee_id, recognition_title) VALUES (?,?)");
-            foreach ($_POST['recognition_title'] as $r) { if(empty(trim($r)))continue; $a=$eid;$b=trim($r); $rc->bind_param("is",$a,$b); $rc->execute(); }
+            foreach ($_POST['recognition_title'] as $r) {
+                if (empty(trim($r)))
+                    continue;
+                $a = $eid;
+                $b = trim($r);
+                $rc->bind_param("is", $a, $b);
+                $rc->execute();
+            }
             $rc->close();
         }
         if (!empty($_POST['membership_org'])) {
             $mb = $conn->prepare("INSERT INTO employee_memberships (employee_id, organization_name) VALUES (?,?)");
-            foreach ($_POST['membership_org'] as $m) { if(empty(trim($m)))continue; $a=$eid;$b=trim($m); $mb->bind_param("is",$a,$b); $mb->execute(); }
+            foreach ($_POST['membership_org'] as $m) {
+                if (empty(trim($m)))
+                    continue;
+                $a = $eid;
+                $b = trim($m);
+                $mb->bind_param("is", $a, $b);
+                $mb->execute();
+            }
             $mb->close();
         }
 
@@ -409,9 +513,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_POST['ref_name'])) {
             $rf = $conn->prepare("INSERT INTO employee_references (employee_id, reference_name, reference_address, reference_telephone) VALUES (?,?,?,?)");
             foreach ($_POST['ref_name'] as $i => $rn) {
-                if(empty(trim($rn)))continue;
-                $a=$eid;$b=trim($rn);$c=trim($_POST['ref_address'][$i]??'');$d=trim($_POST['ref_telephone'][$i]??'');
-                $rf->bind_param("isss",$a,$b,$c,$d); $rf->execute();
+                if (empty(trim($rn)))
+                    continue;
+                $a = $eid;
+                $b = trim($rn);
+                $c = trim($_POST['ref_address'][$i] ?? '');
+                $d = trim($_POST['ref_telephone'][$i] ?? '');
+                $rf->bind_param("isss", $a, $b, $c, $d);
+                $rf->execute();
             }
             $rf->close();
         }
@@ -426,11 +535,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once '../includes/header.php';
 $branches = $conn->query("SELECT * FROM branches ORDER BY branch_name");
+$departments_result = $conn->query("SELECT department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
+$departments = $departments_result ? $departments_result->fetch_all(MYSQLI_ASSOC) : [];
 
 $stepLabels = [
-    '1'=>'Personal Info','2'=>'Family','3'=>'Education','4'=>'Work Exp.',
-    '5'=>'Training','6'=>'Voluntary','7'=>'Eligibility','8'=>'Skills',
-    '9'=>'Assets','10'=>'Disclosures','11'=>'References','12'=>'Employment',
+    '1' => 'Personal Info',
+    '2' => 'Family',
+    '3' => 'Education',
+    '4' => 'Work Exp.',
+    '5' => 'Training',
+    '6' => 'Voluntary',
+    '7' => 'Eligibility',
+    '8' => 'Skills',
+    '9' => 'Assets',
+    '10' => 'Disclosures',
+    '11' => 'References',
+    '12' => 'Employment',
 ];
 ?>
 
@@ -443,12 +563,14 @@ $stepLabels = [
 
 <div class="content-card">
     <div class="card-header">
-        <h5><i class="fas fa-user-edit me-2"></i>Edit: <?php echo e($emp['first_name'] . ' ' . $emp['last_name']); ?></h5>
+        <h5><i class="fas fa-user-edit me-2"></i>Edit: <?php echo e($emp['first_name'] . ' ' . $emp['last_name']); ?>
+        </h5>
     </div>
     <div class="card-body">
         <div class="step-wizard mb-4">
             <?php foreach ($stepLabels as $num => $label): ?>
-                <div class="step <?php echo $num == 1 ? 'active' : ''; ?>" id="step<?php echo $num; ?>Label" onclick="showStep(<?php echo $num; ?>)">
+                <div class="step <?php echo $num == 1 ? 'active' : ''; ?>" id="step<?php echo $num; ?>Label"
+                    onclick="showStep(<?php echo $num; ?>)">
                     <span class="step-num"><?php echo $num; ?></span>
                     <?php echo $label; ?>
                 </div>

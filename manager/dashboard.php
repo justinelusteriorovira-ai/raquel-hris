@@ -20,18 +20,27 @@ $pending = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as 
     WHERE ev.status = 'Pending Manager'
     ORDER BY ev.submitted_date DESC LIMIT 5");
 
-// Fetch performance distribution for pie chart
+// 1. Performance Distribution Data
 $perf_dist = $conn->query("SELECT performance_level, COUNT(*) as count FROM evaluations WHERE status = 'Approved' AND performance_level IS NOT NULL GROUP BY performance_level");
 $perf_data = ['Excellent' => 0, 'Above Average' => 0, 'Average' => 0, 'Needs Improvement' => 0];
 while ($row = $perf_dist->fetch_assoc()) {
     if (isset($perf_data[$row['performance_level']])) {
-        $perf_data[$row['performance_level']] = (int)$row['count'];
+        $perf_data[$row['performance_level']] = (int) $row['count'];
     }
+}
+
+// 2. Evaluation Status Data
+$status_dist = $conn->query("SELECT status, COUNT(*) as count FROM evaluations GROUP BY status");
+$status_labels = [];
+$status_counts = [];
+while ($row = $status_dist->fetch_assoc()) {
+    $status_labels[] = $row['status'];
+    $status_counts[] = (int) $row['count'];
 }
 ?>
 
 <!-- Statistics Cards -->
-<div class="row">
+<div class="row g-3 mb-4">
     <div class="col-xl col-md-6">
         <div class="stat-card">
             <div class="stat-icon blue"><i class="fas fa-users"></i></div>
@@ -79,17 +88,48 @@ while ($row = $perf_dist->fetch_assoc()) {
     </div>
 </div>
 
+<div class="row g-4 mb-4">
+    <!-- Performance Distribution -->
+    <div class="col-lg-6">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie me-2"></i>Performance Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height:300px;">
+                    <canvas id="perfPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Status -->
+    <div class="col-lg-6">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks me-2"></i>Evaluation Overview (By Status)</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height:300px;">
+                    <canvas id="statusDonutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <!-- Pending Approvals -->
-    <div class="col-lg-7">
+    <div class="col-12">
         <div class="content-card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-check-double me-2"></i>Pending Approvals</h5>
-                <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php" class="btn btn-sm btn-outline-primary">View All</a>
+                <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php"
+                    class="btn btn-sm btn-outline-primary">View All</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover mb-0">
                         <thead>
                             <tr>
                                 <th>Employee</th>
@@ -101,7 +141,9 @@ while ($row = $perf_dist->fetch_assoc()) {
                         </thead>
                         <tbody>
                             <?php if ($pending->num_rows === 0): ?>
-                                <tr><td colspan="5" class="text-center text-muted py-4">No pending approvals.</td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No pending approvals.</td>
+                                </tr>
                             <?php else: ?>
                                 <?php while ($row = $pending->fetch_assoc()): ?>
                                     <tr>
@@ -109,12 +151,14 @@ while ($row = $perf_dist->fetch_assoc()) {
                                         <td><?php echo e($row['submitted_by_name']); ?></td>
                                         <td><small><?php echo formatDate($row['submitted_date']); ?></small></td>
                                         <td>
-                                            <span class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?>">
+                                            <span
+                                                class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?>">
                                                 <?php echo $row['total_score']; ?>%
                                             </span>
                                         </td>
                                         <td>
-                                            <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php?review=<?php echo $row['evaluation_id']; ?>" class="btn btn-sm btn-primary">Review</a>
+                                            <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php?review=<?php echo $row['evaluation_id']; ?>"
+                                                class="btn btn-sm btn-primary">Review</a>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>
@@ -125,45 +169,47 @@ while ($row = $perf_dist->fetch_assoc()) {
             </div>
         </div>
     </div>
-
-    <!-- Performance Distribution -->
-    <div class="col-lg-5">
-        <div class="content-card">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-pie me-2"></i>Performance Distribution</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container" style="max-height:280px;">
-                    <canvas id="perfPieChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('perfPieChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Excellent', 'Above Average', 'Average', 'Needs Improvement'],
-            datasets: [{
-                data: [<?php echo $perf_data['Excellent']; ?>, <?php echo $perf_data['Above Average']; ?>, <?php echo $perf_data['Average']; ?>, <?php echo $perf_data['Needs Improvement']; ?>],
-                backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
+    document.addEventListener('DOMContentLoaded', function () {
+        const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 15, usePointStyle: true } }
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 15 } }
             }
-        }
+        };
+
+        // 1. Performance Distribution (Pie)
+        new Chart(document.getElementById('perfPieChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Excellent', 'Above Average', 'Average', 'Needs Improvement'],
+                datasets: [{
+                    data: [<?php echo $perf_data['Excellent']; ?>, <?php echo $perf_data['Above Average']; ?>, <?php echo $perf_data['Average']; ?>, <?php echo $perf_data['Needs Improvement']; ?>],
+                    backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: commonOptions
+        });
+
+        // 2. Evaluation Status (Doughnut)
+        new Chart(document.getElementById('statusDonutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?php echo json_encode($status_labels); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($status_counts); ?>,
+                    backgroundColor: ['#6c757d', '#ffc107', '#17a2b8', '#28a745', '#dc3545', '#007bff'],
+                    hoverOffset: 4
+                }]
+            },
+            options: commonOptions
+        });
     });
-});
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

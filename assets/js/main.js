@@ -30,19 +30,19 @@ function markAllRead() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Remove badge
-            const badge = document.querySelector('.notification-badge');
-            if (badge) badge.remove();
-            // Remove unread styling
-            document.querySelectorAll('.notification-item.unread').forEach(el => {
-                el.classList.remove('unread');
-            });
-        }
-    })
-    .catch(err => console.error('Error marking notifications:', err));
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove badge
+                const badge = document.querySelector('.notification-badge');
+                if (badge) badge.remove();
+                // Remove unread styling
+                document.querySelectorAll('.notification-item.unread').forEach(el => {
+                    el.classList.remove('unread');
+                });
+            }
+        })
+        .catch(err => console.error('Error marking notifications:', err));
 }
 
 /**
@@ -74,14 +74,24 @@ function confirmDelete(message) {
 }
 
 /**
- * Close alert after 5 seconds
+ * Initialize components that need re-binding after PJAX load
  */
-document.addEventListener('DOMContentLoaded', function() {
+function initDynamicComponents() {
+    // 1. Close alert after 5 seconds
     const alerts = document.querySelectorAll('.alert-dismissible');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
+    alerts.forEach(function (alert) {
+        if (alert.dataset.init) return;
+        alert.dataset.init = 'true';
+        setTimeout(function () {
             const closeBtn = alert.querySelector('.btn-close');
             if (closeBtn) closeBtn.click();
         }, 5000);
     });
-});
+}
+
+document.addEventListener('DOMContentLoaded', initDynamicComponents);
+
+// Export for PJAX use
+if (typeof window !== 'undefined') {
+    window.initDynamicComponents = initDynamicComponents;
+}

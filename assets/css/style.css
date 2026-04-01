@@ -113,12 +113,13 @@ a {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    position: fixed;
-    top: 0;
+    position: fixed !important;
+    top: 0 !important;
     right: 0;
     left: var(--sidebar-width);
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    z-index: 1030;
+    /* Above sidebar-overlay but below modals */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     transition: left 0.3s ease;
 }
 
@@ -317,7 +318,8 @@ a {
     width: 20px;
     text-align: center;
     font-size: 1rem;
-    color: var(--primary-light); /* Gold icons for visibility on black */
+    color: var(--primary-light);
+    /* Gold icons for visibility on black */
 }
 
 /* ---------- Main Content ---------- */
@@ -434,6 +436,18 @@ a {
 
 .content-card .card-body {
     padding: 20px;
+}
+
+/* ---------- Chart Enhancements ---------- */
+.chart-container {
+    position: relative;
+    margin: auto;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.content-card canvas {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
 }
 
 /* ---------- Tables ---------- */

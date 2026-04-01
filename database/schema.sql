@@ -382,6 +382,7 @@ CREATE TABLE career_movements (
     logged_by INT NULL,
     approved_by INT NULL,
     approval_status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+    is_applied TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_movement_employee FOREIGN KEY (employee_id) REFERENCES employees(employee_id) ON DELETE CASCADE,
     CONSTRAINT fk_movement_logger FOREIGN KEY (logged_by) REFERENCES users(user_id) ON DELETE SET NULL,

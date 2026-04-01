@@ -8,44 +8,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
     if (!isset($_FILES['employee_csv']) || $_FILES['employee_csv']['error'] !== UPLOAD_ERR_OK) {
         redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', 'Please upload a valid CSV file.');
     }
-    
+
     $file = fopen($_FILES['employee_csv']['tmp_name'], 'r');
-    if (!$file) redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', 'Could not read the uploaded file.');
-    
+    if (!$file)
+        redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', 'Could not read the uploaded file.');
+
     // Skip header
     fgetcsv($file);
-    
-    $success = 0; $skipped = 0;
-    
-    while (($row = fgetcsv($file)) !== false) {
-        if (count($row) < 74) { $skipped++; continue; }
-        
-        $v = array_map('trim', $row);
-        
-        // Basic mapping for CSV
-        $first_name = $v[0]; $last_name = $v[1]; $middle_name = $v[2]; $name_extension = $v[3];
-        $dob = null; if (!empty($v[4])) { $d1 = DateTime::createFromFormat('m/d/Y', $v[4]); if ($d1) $dob = $d1->format('Y-m-d'); else $dob = $v[4]; }
-        $pob = $v[5]; $gender = $v[6]; $civil_status = $v[7];
-        $hd = null; if (!empty($v[65])) { $d2 = DateTime::createFromFormat('m/d/Y', $v[65]); if ($d2) $hd = $d2->format('Y-m-d'); else $hd = $v[65]; }
-        $job_title = $v[66]; $dept = $v[67];
-        $emp_status = $v[69]; $emp_type = $v[70];
 
-        if (empty($first_name) || empty($last_name) || empty($hd) || empty($job_title)) { $skipped++; continue; }
-        
+    $success = 0;
+    $skipped = 0;
+
+    while (($row = fgetcsv($file)) !== false) {
+        if (count($row) < 74) {
+            $skipped++;
+            continue;
+        }
+
+        $v = array_map('trim', $row);
+
+        // Basic mapping for CSV
+        $first_name = $v[0];
+        $last_name = $v[1];
+        $middle_name = $v[2];
+        $name_extension = $v[3];
+        $dob = null;
+        if (!empty($v[4])) {
+            $d1 = DateTime::createFromFormat('m/d/Y', $v[4]);
+            if ($d1)
+                $dob = $d1->format('Y-m-d');
+            else
+                $dob = $v[4];
+        }
+        $pob = $v[5];
+        $gender = $v[6];
+        $civil_status = $v[7];
+        $hd = null;
+        if (!empty($v[65])) {
+            $d2 = DateTime::createFromFormat('m/d/Y', $v[65]);
+            if ($d2)
+                $hd = $d2->format('Y-m-d');
+            else
+                $hd = $v[65];
+        }
+        $job_title = $v[66];
+        $dept = $v[67];
+        $emp_status = $v[69];
+        $emp_type = $v[70];
+
+        if (empty($first_name) || empty($last_name) || empty($hd) || empty($job_title)) {
+            $skipped++;
+            continue;
+        }
+
         // Dup check
         $dc = $conn->prepare("SELECT employee_id FROM employees WHERE first_name = ? AND last_name = ?");
-        $dc->bind_param("ss", $first_name, $last_name); $dc->execute(); $dr = $dc->get_result(); $dc->close();
-        if ($dr->num_rows > 0) { $skipped++; continue; }
-        
+        $dc->bind_param("ss", $first_name, $last_name);
+        $dc->execute();
+        $dr = $dc->get_result();
+        $dc->close();
+        if ($dr->num_rows > 0) {
+            $skipped++;
+            continue;
+        }
+
         // Branch
         $bid = null;
         if (!empty($v[68])) {
             $bc = $conn->prepare("SELECT branch_id FROM branches WHERE branch_name = ?");
-            $bc->bind_param("s", $v[68]); $bc->execute(); $br = $bc->get_result();
-            if ($b = $br->fetch_assoc()) { $bid = $b['branch_id']; }
-            else {
+            $bc->bind_param("s", $v[68]);
+            $bc->execute();
+            $br = $bc->get_result();
+            if ($b = $br->fetch_assoc()) {
+                $bid = $b['branch_id'];
+            } else {
                 $bi = $conn->prepare("INSERT INTO branches (branch_name, location) VALUES (?, 'TBD')");
-                $bi->bind_param("s", $v[68]); $bi->execute(); $bid = $bi->insert_id; $bi->close();
+                $bi->bind_param("s", $v[68]);
+                $bi->execute();
+                $bid = $bi->insert_id;
+                $bi->close();
             }
             $bc->close();
         }
@@ -60,24 +101,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
 
             // Minimal details for CSV import
             $stmt = $conn->prepare("INSERT INTO employee_details (employee_id, height_m, weight_kg, blood_type, citizenship) VALUES (?,?,?,?,?)");
-            $h = !empty($v[8])?(float)$v[8]:null; $w = !empty($v[9])?(float)$v[9]:null;
-            $stmt->bind_param("iddss", $eid, $h, $w, $v[10], $v[11]); $stmt->execute(); $stmt->close();
+            $h = !empty($v[8]) ? (float) $v[8] : null;
+            $w = !empty($v[9]) ? (float) $v[9] : null;
+            $stmt->bind_param("iddss", $eid, $h, $w, $v[10], $v[11]);
+            $stmt->execute();
+            $stmt->close();
 
             $stmt = $conn->prepare("INSERT INTO employee_government_ids (employee_id, sss_number, philhealth_number, pagibig_number, tin_number) VALUES (?,?,?,?,?)");
-            $stmt->bind_param("issss", $eid, $v[12], $v[13], $v[14], $v[15]); $stmt->execute(); $stmt->close();
+            $stmt->bind_param("issss", $eid, $v[12], $v[13], $v[14], $v[15]);
+            $stmt->execute();
+            $stmt->close();
 
             $stmt = $conn->prepare("INSERT INTO employee_contacts (employee_id, telephone_number, mobile_number, personal_email) VALUES (?,?,?,?)");
-            $stmt->bind_param("isss", $eid, $v[30], $v[31], $v[32]); $stmt->execute(); $stmt->close();
+            $stmt->bind_param("isss", $eid, $v[30], $v[31], $v[32]);
+            $stmt->execute();
+            $stmt->close();
 
             // Addresses
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Residential', ?,?,?,?,?,?,?)");
-            $stmt->bind_param("isssssss", $eid, $v[16], $v[17], $v[18], $v[19], $v[20], $v[21], $v[22]); $stmt->execute(); $stmt->close();
+            $stmt->bind_param("isssssss", $eid, $v[16], $v[17], $v[18], $v[19], $v[20], $v[21], $v[22]);
+            $stmt->execute();
+            $stmt->close();
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Permanent', ?,?,?,?,?,?,?)");
-            $stmt->bind_param("isssssss", $eid, $v[23], $v[24], $v[25], $v[26], $v[27], $v[28], $v[29]); $stmt->execute(); $stmt->close();
+            $stmt->bind_param("isssssss", $eid, $v[23], $v[24], $v[25], $v[26], $v[27], $v[28], $v[29]);
+            $stmt->execute();
+            $stmt->close();
 
             // Emergency
             $stmt = $conn->prepare("INSERT INTO employee_emergency_contacts (employee_id, contact_name, relationship, contact_number) VALUES (?,?,?,?)");
-            $stmt->bind_param("isss", $eid, $v[71], $v[72], $v[73]); $stmt->execute(); $stmt->close();
+            $stmt->bind_param("isss", $eid, $v[71], $v[72], $v[73]);
+            $stmt->execute();
+            $stmt->close();
 
             $conn->commit();
             logAudit($conn, $_SESSION['user_id'], 'CREATE', 'Employee', $eid, "Imported employee via CSV: $first_name $last_name");
@@ -88,10 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
         }
     }
     fclose($file);
-    
+
     if ($success > 0) {
         $msg = "Successfully imported $success employee(s).";
-        if ($skipped > 0) $msg .= " Skipped $skipped row(s) due to errors or duplicates.";
+        if ($skipped > 0)
+            $msg .= " Skipped $skipped row(s) due to errors or duplicates.";
         redirectWith(BASE_URL . '/manager/employees.php', 'success', $msg);
     } else {
         redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', "Failed to import employees. ($skipped rows skipped)");
@@ -110,8 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
     $place_of_birth = trim($_POST['place_of_birth'] ?? '');
     $gender = $_POST['gender'] ?? null;
     $civil_status = $_POST['civil_status'] ?? null;
-    $height_m = !empty($_POST['height_m']) ? (float)$_POST['height_m'] : null;
-    $weight_kg = !empty($_POST['weight_kg']) ? (float)$_POST['weight_kg'] : null;
+    $height_m = !empty($_POST['height_m']) ? (float) $_POST['height_m'] : null;
+    $weight_kg = !empty($_POST['weight_kg']) ? (float) $_POST['weight_kg'] : null;
     $blood_type = $_POST['blood_type'] ?? null;
     $citizenship = trim($_POST['citizenship'] ?? 'Filipino');
 
@@ -182,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
     $hire_date = $_POST['hire_date'] ?? '';
     $job_title = trim($_POST['job_title'] ?? '');
     $department = trim($_POST['department'] ?? '');
-    $branch_id = !empty($_POST['branch_id']) ? (int)$_POST['branch_id'] : null;
+    $branch_id = !empty($_POST['branch_id']) ? (int) $_POST['branch_id'] : null;
     $employment_status = $_POST['employment_status'] ?? 'Regular';
     $employment_type = $_POST['employment_type'] ?? 'Full-time';
     $emergency_contact_name = trim($_POST['emergency_contact_name'] ?? '');
@@ -193,9 +248,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
     $profile_picture = null;
     if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = '../assets/img/employees/';
-        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+        if (!is_dir($upload_dir))
+            mkdir($upload_dir, 0777, true);
         $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg','jpeg','png','gif'])) {
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
             $new_filename = uniqid('emp_') . '.' . $ext;
             if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
                 $profile_picture = $new_filename;
@@ -234,10 +290,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param(
             "sssssssssssssss",
-            $first_name, $last_name, $middle_name, $name_extension,
-            $date_of_birth, $place_of_birth, $gender, $civil_status,
-            $hire_date, $job_title, $department, $branch_id,
-            $employment_status, $employment_type, $profile_picture
+            $first_name,
+            $last_name,
+            $middle_name,
+            $name_extension,
+            $date_of_birth,
+            $place_of_birth,
+            $gender,
+            $civil_status,
+            $hire_date,
+            $job_title,
+            $department,
+            $branch_id,
+            $employment_status,
+            $employment_type,
+            $profile_picture
         );
         $stmt->execute();
         $new_id = $stmt->insert_id;
@@ -246,36 +313,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         // 1. Details
         $stmt = $conn->prepare("INSERT INTO employee_details (employee_id, height_m, weight_kg, blood_type, citizenship) VALUES (?,?,?,?,?)");
         $stmt->bind_param("iddss", $new_id, $height_m, $weight_kg, $blood_type, $citizenship);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 2. Gov IDs
         $stmt = $conn->prepare("INSERT INTO employee_government_ids (employee_id, sss_number, philhealth_number, pagibig_number, tin_number) VALUES (?,?,?,?,?)");
         $stmt->bind_param("issss", $new_id, $sss_number, $philhealth_number, $pagibig_number, $tin_number);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 3. Contacts
         $stmt = $conn->prepare("INSERT INTO employee_contacts (employee_id, telephone_number, mobile_number, personal_email) VALUES (?,?,?,?)");
         $stmt->bind_param("isss", $new_id, $telephone_number, $contact_number, $email);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 4. Addresses (Residential)
         if (!empty($res_street) || !empty($res_city)) {
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Residential', ?,?,?,?,?,?,?)");
             $stmt->bind_param("isssssss", $new_id, $res_house_no, $res_street, $res_subdivision, $res_barangay, $res_city, $res_province, $res_zip_code);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         // 5. Addresses (Permanent)
         if (!empty($perm_street) || !empty($perm_city)) {
             $stmt = $conn->prepare("INSERT INTO employee_addresses (employee_id, address_type, house_no, street, subdivision, barangay, city, province, zip_code) VALUES (?, 'Permanent', ?,?,?,?,?,?,?)");
             $stmt->bind_param("isssssss", $new_id, $perm_house_no, $perm_street, $perm_subdivision, $perm_barangay, $perm_city, $perm_province, $perm_zip_code);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         // 6. Emergency Contact
         $stmt = $conn->prepare("INSERT INTO employee_emergency_contacts (employee_id, contact_name, relationship, contact_number) VALUES (?,?,?,?)");
         $stmt->bind_param("isss", $new_id, $emergency_contact_name, $emergency_contact_relationship, $emergency_contact_number);
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 7. Disclosures
         $stmt = $conn->prepare("INSERT INTO employee_disclosures (
@@ -284,31 +357,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
             has_been_separated, separation_details, is_pwd, pwd_details, is_solo_parent, solo_parent_details,
             has_recent_hospital, hospital_details, has_current_treatment, treatment_details
         ) VALUES (?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?)");
-        $stmt->bind_param("iisssssssssssssssss", 
-            $new_id, $is_related_to_company, $related_details, $has_admin_offense, $admin_offense_details,
-            $has_criminal_charge, $criminal_charge_details, $has_criminal_conviction, $criminal_conviction_details,
-            $has_been_separated, $separation_details, $is_pwd, $pwd_details, $is_solo_parent, $solo_parent_details,
-            $has_recent_hospital, $hospital_details, $has_current_treatment, $treatment_details
+        $stmt->bind_param(
+            "iisssssssssssssssss",
+            $new_id,
+            $is_related_to_company,
+            $related_details,
+            $has_admin_offense,
+            $admin_offense_details,
+            $has_criminal_charge,
+            $criminal_charge_details,
+            $has_criminal_conviction,
+            $criminal_conviction_details,
+            $has_been_separated,
+            $separation_details,
+            $is_pwd,
+            $pwd_details,
+            $is_solo_parent,
+            $solo_parent_details,
+            $has_recent_hospital,
+            $hospital_details,
+            $has_current_treatment,
+            $treatment_details
         );
-        $stmt->execute(); $stmt->close();
+        $stmt->execute();
+        $stmt->close();
 
         // 8. Family (Spouse)
         if (!empty($spouse_surname) || !empty($spouse_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, name_extension, occupation) VALUES (?, 'Spouse', ?,?,?,?,?)");
             $stmt->bind_param("isssss", $new_id, $spouse_surname, $spouse_first_name, $spouse_middle_name, $spouse_name_ext, $spouse_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         // 9. Family (Parents)
         if (!empty($father_surname) || !empty($father_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, name_extension, occupation) VALUES (?, 'Father', ?,?,?,?,?)");
             $stmt->bind_param("isssss", $new_id, $father_surname, $father_first_name, $father_middle_name, $father_name_ext, $father_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
         if (!empty($mother_maiden_surname) || !empty($mother_first_name)) {
             $stmt = $conn->prepare("INSERT INTO employee_family (employee_id, member_type, surname, first_name, middle_name, occupation) VALUES (?, 'Mother', ?,?,?,?)");
             $stmt->bind_param("issss", $new_id, $mother_maiden_surname, $mother_first_name, $mother_middle_name, $mother_occupation);
-            $stmt->execute(); $stmt->close();
+            $stmt->execute();
+            $stmt->close();
         }
 
         $conn->commit();
@@ -318,7 +411,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['child_first_name'])) {
             $cstmt = $conn->prepare("INSERT INTO employee_children (employee_id, surname, first_name, middle_name, date_of_birth) VALUES (?,?,?,?,?)");
             foreach ($_POST['child_first_name'] as $i => $cfn) {
-                if (empty(trim($cfn))) continue;
+                if (empty(trim($cfn)))
+                    continue;
                 $cs = trim($_POST['child_surname'][$i] ?? '');
                 $cfn = trim($cfn);
                 $cm = trim($_POST['child_middle_name'][$i] ?? '');
@@ -333,7 +427,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['sibling_first_name'])) {
             $sstmt = $conn->prepare("INSERT INTO employee_siblings (employee_id, surname, first_name, middle_name, date_of_birth) VALUES (?,?,?,?,?)");
             foreach ($_POST['sibling_first_name'] as $i => $sfn) {
-                if (empty(trim($sfn))) continue;
+                if (empty(trim($sfn)))
+                    continue;
                 $ss = trim($_POST['sibling_surname'][$i] ?? '');
                 $sfn = trim($sfn);
                 $sm = trim($_POST['sibling_middle_name'][$i] ?? '');
@@ -348,7 +443,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['edu_level'])) {
             $estmt = $conn->prepare("INSERT INTO employee_education (employee_id, education_level, school_name, degree_course, period_from, period_to, highest_level_units, year_graduated, honors_received) VALUES (?,?,?,?,?,?,?,?,?)");
             foreach ($_POST['edu_level'] as $i => $lvl) {
-                if (empty(trim($_POST['edu_school'][$i] ?? ''))) continue;
+                if (empty(trim($_POST['edu_school'][$i] ?? '')))
+                    continue;
                 $school = trim($_POST['edu_school'][$i]);
                 $degree = trim($_POST['edu_degree'][$i] ?? '');
                 $pfrom = $_POST['edu_from'][$i] ?? null;
@@ -366,12 +462,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['work_title'])) {
             $wstmt = $conn->prepare("INSERT INTO employee_work_experience (employee_id, date_from, date_to, job_title, company_name, monthly_salary, appointment_status, reason_for_leaving) VALUES (?,?,?,?,?,?,?,?)");
             foreach ($_POST['work_title'] as $i => $wt) {
-                if (empty(trim($wt))) continue;
+                if (empty(trim($wt)))
+                    continue;
                 $wf = $_POST['work_from'][$i] ?? null;
                 $wto = $_POST['work_to'][$i] ?? null;
                 $wt = trim($wt);
                 $wc = trim($_POST['work_company'][$i] ?? '');
-                $ws = !empty($_POST['work_salary'][$i]) ? (float)$_POST['work_salary'][$i] : null;
+                $ws = !empty($_POST['work_salary'][$i]) ? (float) $_POST['work_salary'][$i] : null;
                 $wa = trim($_POST['work_status'][$i] ?? '');
                 $wr = trim($_POST['work_reason'][$i] ?? '');
                 $wstmt->bind_param("issssdss", $new_id, $wf, $wto, $wt, $wc, $ws, $wa, $wr);
@@ -384,12 +481,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['training_title'])) {
             $tstmt = $conn->prepare("INSERT INTO employee_trainings (employee_id, date_from, date_to, training_title, training_type, no_of_hours, conducted_by) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['training_title'] as $i => $tt) {
-                if (empty(trim($tt))) continue;
+                if (empty(trim($tt)))
+                    continue;
                 $tf = $_POST['training_from'][$i] ?? null;
                 $tto = $_POST['training_to'][$i] ?? null;
                 $tt = trim($tt);
                 $ttype = trim($_POST['training_type'][$i] ?? '');
-                $th = !empty($_POST['training_hours'][$i]) ? (float)$_POST['training_hours'][$i] : null;
+                $th = !empty($_POST['training_hours'][$i]) ? (float) $_POST['training_hours'][$i] : null;
                 $tc = trim($_POST['training_conducted'][$i] ?? '');
                 $tstmt->bind_param("issssds", $new_id, $tf, $tto, $tt, $ttype, $th, $tc);
                 $tstmt->execute();
@@ -401,12 +499,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['vol_org'])) {
             $vstmt = $conn->prepare("INSERT INTO employee_voluntary_work (employee_id, date_from, date_to, organization_name, organization_address, no_of_hours, position_nature) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['vol_org'] as $i => $vo) {
-                if (empty(trim($vo))) continue;
+                if (empty(trim($vo)))
+                    continue;
                 $vf = $_POST['vol_from'][$i] ?? null;
                 $vto = $_POST['vol_to'][$i] ?? null;
                 $vo = trim($vo);
                 $va = trim($_POST['vol_address'][$i] ?? '');
-                $vh = !empty($_POST['vol_hours'][$i]) ? (float)$_POST['vol_hours'][$i] : null;
+                $vh = !empty($_POST['vol_hours'][$i]) ? (float) $_POST['vol_hours'][$i] : null;
                 $vp = trim($_POST['vol_position'][$i] ?? '');
                 $vstmt->bind_param("issssds", $new_id, $vf, $vto, $vo, $va, $vh, $vp);
                 $vstmt->execute();
@@ -418,7 +517,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['elig_title'])) {
             $elstmt = $conn->prepare("INSERT INTO employee_eligibility (employee_id, license_title, date_from, date_to, license_number, date_of_exam, place_of_exam) VALUES (?,?,?,?,?,?,?)");
             foreach ($_POST['elig_title'] as $i => $et) {
-                if (empty(trim($et))) continue;
+                if (empty(trim($et)))
+                    continue;
                 $ef = $_POST['elig_from'][$i] ?? null;
                 $eto = $_POST['elig_to'][$i] ?? null;
                 $en = trim($_POST['elig_number'][$i] ?? '');
@@ -434,7 +534,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['skill_name'])) {
             $skstmt = $conn->prepare("INSERT INTO employee_skills (employee_id, skill_name) VALUES (?,?)");
             foreach ($_POST['skill_name'] as $sk) {
-                if (empty(trim($sk))) continue;
+                if (empty(trim($sk)))
+                    continue;
                 $sk = trim($sk);
                 $skstmt->bind_param("is", $new_id, $sk);
                 $skstmt->execute();
@@ -446,7 +547,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['recognition_title'])) {
             $rcstmt = $conn->prepare("INSERT INTO employee_recognitions (employee_id, recognition_title) VALUES (?,?)");
             foreach ($_POST['recognition_title'] as $rc) {
-                if (empty(trim($rc))) continue;
+                if (empty(trim($rc)))
+                    continue;
                 $rc = trim($rc);
                 $rcstmt->bind_param("is", $new_id, $rc);
                 $rcstmt->execute();
@@ -458,7 +560,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['membership_org'])) {
             $mbstmt = $conn->prepare("INSERT INTO employee_memberships (employee_id, organization_name) VALUES (?,?)");
             foreach ($_POST['membership_org'] as $mb) {
-                if (empty(trim($mb))) continue;
+                if (empty(trim($mb)))
+                    continue;
                 $mb = trim($mb);
                 $mbstmt->bind_param("is", $new_id, $mb);
                 $mbstmt->execute();
@@ -470,13 +573,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['rprop_desc'])) {
             $rpstmt = $conn->prepare("INSERT INTO employee_real_properties (employee_id, description, kind, exact_location, assessed_value, market_value, acquisition_year_mode, acquisition_cost) VALUES (?,?,?,?,?,?,?,?)");
             foreach ($_POST['rprop_desc'] as $i => $rd) {
-                if (empty(trim($rd))) continue;
+                if (empty(trim($rd)))
+                    continue;
                 $rk = trim($_POST['rprop_kind'][$i] ?? '');
                 $rl = trim($_POST['rprop_location'][$i] ?? '');
-                $rav = !empty($_POST['rprop_assessed'][$i]) ? (float)$_POST['rprop_assessed'][$i] : null;
-                $rmv = !empty($_POST['rprop_market'][$i]) ? (float)$_POST['rprop_market'][$i] : null;
+                $rav = !empty($_POST['rprop_assessed'][$i]) ? (float) $_POST['rprop_assessed'][$i] : null;
+                $rmv = !empty($_POST['rprop_market'][$i]) ? (float) $_POST['rprop_market'][$i] : null;
                 $ram = trim($_POST['rprop_acq_mode'][$i] ?? '');
-                $rac = !empty($_POST['rprop_acq_cost'][$i]) ? (float)$_POST['rprop_acq_cost'][$i] : null;
+                $rac = !empty($_POST['rprop_acq_cost'][$i]) ? (float) $_POST['rprop_acq_cost'][$i] : null;
                 $rd = trim($rd);
                 $rpstmt->bind_param("isssdds d", $new_id, $rd, $rk, $rl, $rav, $rmv, $ram, $rac);
                 $rpstmt->execute();
@@ -488,10 +592,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['pprop_desc'])) {
             $ppstmt = $conn->prepare("INSERT INTO employee_personal_properties (employee_id, description, year_acquired, acquisition_cost) VALUES (?,?,?,?)");
             foreach ($_POST['pprop_desc'] as $i => $pd) {
-                if (empty(trim($pd))) continue;
+                if (empty(trim($pd)))
+                    continue;
                 $pd = trim($pd);
                 $py = trim($_POST['pprop_year'][$i] ?? '');
-                $pc = !empty($_POST['pprop_cost'][$i]) ? (float)$_POST['pprop_cost'][$i] : null;
+                $pc = !empty($_POST['pprop_cost'][$i]) ? (float) $_POST['pprop_cost'][$i] : null;
                 $ppstmt->bind_param("issd", $new_id, $pd, $py, $pc);
                 $ppstmt->execute();
             }
@@ -502,10 +607,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['liab_nature'])) {
             $lstmt = $conn->prepare("INSERT INTO employee_liabilities (employee_id, nature_of_liability, creditor_name, outstanding_balance) VALUES (?,?,?,?)");
             foreach ($_POST['liab_nature'] as $i => $ln) {
-                if (empty(trim($ln))) continue;
+                if (empty(trim($ln)))
+                    continue;
                 $ln = trim($ln);
                 $lc = trim($_POST['liab_creditor'][$i] ?? '');
-                $lb = !empty($_POST['liab_balance'][$i]) ? (float)$_POST['liab_balance'][$i] : null;
+                $lb = !empty($_POST['liab_balance'][$i]) ? (float) $_POST['liab_balance'][$i] : null;
                 $lstmt->bind_param("issd", $new_id, $ln, $lc, $lb);
                 $lstmt->execute();
             }
@@ -516,7 +622,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         if (!empty($_POST['ref_name'])) {
             $rfstmt = $conn->prepare("INSERT INTO employee_references (employee_id, reference_name, reference_address, reference_telephone) VALUES (?,?,?,?)");
             foreach ($_POST['ref_name'] as $i => $rn) {
-                if (empty(trim($rn))) continue;
+                if (empty(trim($rn)))
+                    continue;
                 $rn = trim($rn);
                 $ra = trim($_POST['ref_address'][$i] ?? '');
                 $rt = trim($_POST['ref_telephone'][$i] ?? '');
@@ -537,6 +644,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
 
 require_once '../includes/header.php';
 $branches = $conn->query("SELECT * FROM branches ORDER BY branch_name");
+$departments_result = $conn->query("SELECT department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
+$departments = $departments_result ? $departments_result->fetch_all(MYSQLI_ASSOC) : [];
 
 $stepLabels = [
     '1' => 'Personal Info',
@@ -574,7 +683,8 @@ $stepLabels = [
         <!-- Step Wizard -->
         <div class="step-wizard mb-4">
             <?php foreach ($stepLabels as $num => $label): ?>
-                <div class="step <?php echo $num == 1 ? 'active' : ''; ?>" id="step<?php echo $num; ?>Label" onclick="showStep(<?php echo $num; ?>)">
+                <div class="step <?php echo $num == 1 ? 'active' : ''; ?>" id="step<?php echo $num; ?>Label"
+                    onclick="showStep(<?php echo $num; ?>)">
                     <span class="step-num"><?php echo $num; ?></span>
                     <?php echo $label; ?>
                 </div>
@@ -599,25 +709,31 @@ $stepLabels = [
         <div class="modal-content">
             <form method="POST" action="" enctype="multipart/form-data">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="importModalLabel"><i class="fas fa-file-csv me-2"></i>Import Employees from CSV</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="importModalLabel"><i class="fas fa-file-csv me-2"></i>Import Employees
+                        from CSV</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="small text-muted mb-3">Upload a CSV file to bulk import basic employee records. Ensure your file matches the system's exact column format.</p>
-                    
+                    <p class="small text-muted mb-3">Upload a CSV file to bulk import basic employee records. Ensure
+                        your file matches the system's exact column format.</p>
+
                     <div class="mb-3">
                         <label for="employee_csv" class="form-label fw-bold">Select CSV File</label>
-                        <input class="form-control" type="file" id="employee_csv" name="employee_csv" accept=".csv" required>
+                        <input class="form-control" type="file" id="employee_csv" name="employee_csv" accept=".csv"
+                            required>
                     </div>
 
                     <div class="alert alert-info py-2 small mb-0">
                         <i class="fas fa-info-circle me-1"></i>
-                        Need the format? <a href="<?php echo BASE_URL; ?>/sample_employees.csv" download class="alert-link">Download the sample template</a>.
+                        Need the format? <a href="<?php echo BASE_URL; ?>/sample_employees.csv" download
+                            class="alert-link">Download the sample template</a>.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="import_csv" class="btn btn-success"><i class="fas fa-upload me-2"></i>Upload File</button>
+                    <button type="submit" name="import_csv" class="btn btn-success"><i
+                            class="fas fa-upload me-2"></i>Upload File</button>
                 </div>
             </form>
         </div>
