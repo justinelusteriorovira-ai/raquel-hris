@@ -36,25 +36,37 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 
 require_once '../includes/header.php';
 
-// Fetch templates with criteria count
+// Fetch active/draft templates only (archived ones are on the archive page)
 $templates = $conn->query("SELECT et.*, u.full_name as created_by_name,
     (SELECT COUNT(*) FROM evaluation_criteria WHERE template_id = et.template_id) as criteria_count,
     (SELECT SUM(weight) FROM evaluation_criteria WHERE template_id = et.template_id) as total_weight
     FROM evaluation_templates et
     LEFT JOIN users u ON et.created_by = u.user_id
+    WHERE et.status != 'Archived'
     ORDER BY et.created_at DESC");
+
+// Count archived templates for the archive badge
+$archived_count = $conn->query("SELECT COUNT(*) as cnt FROM evaluation_templates WHERE status = 'Archived'")->fetch_assoc()['cnt'];
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <p class="text-muted mb-0">Manage evaluation templates and criteria</p>
-    <a href="<?php echo BASE_URL; ?>/manager/create-template.php" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Create Template
-    </a>
+    <div class="d-flex gap-2">
+        <a href="<?php echo BASE_URL; ?>/manager/template-archive.php" class="btn btn-outline-secondary">
+            <i class="fas fa-archive me-2"></i>Archive
+            <?php if ($archived_count > 0): ?>
+                <span class="badge bg-secondary ms-1"><?php echo $archived_count; ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="<?php echo BASE_URL; ?>/manager/create-template.php" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Create Template
+        </a>
+    </div>
 </div>
 
 <div class="content-card">
     <div class="card-header">
-        <h5><i class="fas fa-file-alt me-2"></i>All Templates</h5>
+        <h5><i class="fas fa-file-alt me-2"></i>Active Templates</h5>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">

@@ -5,23 +5,25 @@ checkRole(['HR Manager']);
 require_once '../includes/header.php';
 
 // Fetch stats
-$total_employees = $conn->query("SELECT COUNT(*) as c FROM employees WHERE is_active = 1")->fetch_assoc()['c'];
-$pending_evals = $conn->query("SELECT COUNT(*) as c FROM evaluations WHERE status = 'Pending Manager'")->fetch_assoc()['c'];
-$pending_movements = $conn->query("SELECT COUNT(*) as c FROM career_movements WHERE approval_status = 'Pending'")->fetch_assoc()['c'];
-$avg_score_result = $conn->query("SELECT AVG(total_score) as avg FROM evaluations WHERE status = 'Approved'");
+$branch_id = $_SESSION['branch_id'];
+
+$total_employees = $conn->query("SELECT COUNT(*) as c FROM employees WHERE is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
+$pending_evals = $conn->query("SELECT COUNT(*) as c FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Pending Manager' AND e.branch_id = $branch_id")->fetch_assoc()['c'];
+$pending_movements = $conn->query("SELECT COUNT(*) as c FROM career_movements cm LEFT JOIN employees e ON cm.employee_id = e.employee_id WHERE cm.approval_status = 'Pending' AND e.branch_id = $branch_id")->fetch_assoc()['c'];
+$avg_score_result = $conn->query("SELECT AVG(ev.total_score) as avg FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Approved' AND e.branch_id = $branch_id");
 $avg_score = round($avg_score_result->fetch_assoc()['avg'] ?? 0, 1);
-$new_evals_month = $conn->query("SELECT COUNT(*) as c FROM evaluations WHERE MONTH(submitted_date) = MONTH(CURRENT_DATE()) AND YEAR(submitted_date) = YEAR(CURRENT_DATE())")->fetch_assoc()['c'];
+$new_evals_month = $conn->query("SELECT COUNT(*) as c FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE MONTH(ev.submitted_date) = MONTH(CURRENT_DATE()) AND YEAR(ev.submitted_date) = YEAR(CURRENT_DATE()) AND e.branch_id = $branch_id")->fetch_assoc()['c'];
 
 // Gender Counts
-$male_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Male' AND is_active = 1")->fetch_assoc()['c'];
-$female_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Female' AND is_active = 1")->fetch_assoc()['c'];
+$male_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Male' AND is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
+$female_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Female' AND is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
 
 // Fetch pending evaluations (5 most recent)
 $pending_evals_list = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, u.full_name as submitted_by_name
     FROM evaluations ev
     LEFT JOIN employees e ON ev.employee_id = e.employee_id
     LEFT JOIN users u ON ev.submitted_by = u.user_id
-    WHERE ev.status = 'Pending Manager'
+    WHERE ev.status = 'Pending Manager' AND e.branch_id = $branch_id
     ORDER BY ev.submitted_date DESC LIMIT 5");
 
 // Fetch pending career movements (5 most recent)
@@ -29,11 +31,11 @@ $pending_cm_list = $conn->query("SELECT cm.*, CONCAT(e.first_name, ' ', e.last_n
     FROM career_movements cm
     LEFT JOIN employees e ON cm.employee_id = e.employee_id
     LEFT JOIN users u ON cm.logged_by = u.user_id
-    WHERE cm.approval_status = 'Pending'
+    WHERE cm.approval_status = 'Pending' AND e.branch_id = $branch_id
     ORDER BY cm.created_at DESC LIMIT 5");
 
 // 1. Performance Distribution Data
-$perf_dist = $conn->query("SELECT performance_level, COUNT(*) as count FROM evaluations WHERE status = 'Approved' AND performance_level IS NOT NULL GROUP BY performance_level");
+$perf_dist = $conn->query("SELECT ev.performance_level, COUNT(*) as count FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Approved' AND ev.performance_level IS NOT NULL AND e.branch_id = $branch_id GROUP BY ev.performance_level");
 $perf_data = ['Excellent' => 0, 'Above Average' => 0, 'Average' => 0, 'Needs Improvement' => 0];
 while ($row = $perf_dist->fetch_assoc()) {
     if (isset($perf_data[$row['performance_level']])) {
@@ -42,7 +44,7 @@ while ($row = $perf_dist->fetch_assoc()) {
 }
 
 // 2. Evaluation Status Data
-$status_dist = $conn->query("SELECT status, COUNT(*) as count FROM evaluations GROUP BY status");
+$status_dist = $conn->query("SELECT ev.status, COUNT(*) as count FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE e.branch_id = $branch_id GROUP BY ev.status");
 $status_labels = [];
 $status_counts = [];
 while ($row = $status_dist->fetch_assoc()) {
@@ -53,16 +55,19 @@ while ($row = $status_dist->fetch_assoc()) {
 
 <!-- Statistics Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-xl col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon blue"><i class="fas fa-users"></i></div>
             <div class="stat-info">
-                <h3><?php echo $total_employees; ?></h3>
+                <h3>
+                    <?php echo $total_employees; ?>
+                </h3>
                 <p>Total Employees</p>
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon info"><i class="fas fa-mars"></i></div>
             <div class="stat-info">
@@ -71,16 +76,18 @@ while ($row = $status_dist->fetch_assoc()) {
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
-            <div class="stat-icon purple" style="background: rgba(232, 62, 140, 0.1); color: #e83e8c;"><i class="fas fa-venus"></i></div>
+            <div class="stat-icon purple" style="background: rgba(232, 62, 140, 0.1); color: #e83e8c;"><i
+                    class="fas fa-venus"></i></div>
             <div class="stat-info">
                 <h3><?php echo $female_count; ?></h3>
                 <p>Female Employees</p>
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
             <div class="stat-info">
@@ -89,7 +96,7 @@ while ($row = $status_dist->fetch_assoc()) {
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon purple"><i class="fas fa-exchange-alt"></i></div>
             <div class="stat-info">
@@ -98,16 +105,16 @@ while ($row = $status_dist->fetch_assoc()) {
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon green"><i class="fas fa-star"></i></div>
             <div class="stat-info">
                 <h3><?php echo $avg_score; ?>%</h3>
-                <p>Avg Performance Score</p>
+                <p>Average Score</p>
             </div>
         </div>
     </div>
-    <div class="col-xl col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6">
         <div class="stat-card">
             <div class="stat-icon info"><i class="fas fa-file-alt"></i></div>
             <div class="stat-info">
@@ -155,15 +162,19 @@ while ($row = $status_dist->fetch_assoc()) {
             <div class="card-header d-flex justify-content-between align-items-center">
                 <ul class="nav nav-tabs card-header-tabs" id="pendingTabs" role="tablist">
                     <li class="nav-item">
-                        <button class="nav-link active" id="eval-tab" data-bs-toggle="tab" data-bs-target="#evals" type="button" role="tab">
-                            <i class="fas fa-file-alt me-2"></i>Evaluations 
-                            <?php if ($pending_evals > 0): ?><span class="badge bg-warning text-dark ms-1"><?php echo $pending_evals; ?></span><?php endif; ?>
+                        <button class="nav-link active" id="eval-tab" data-bs-toggle="tab" data-bs-target="#evals"
+                            type="button" role="tab">
+                            <i class="fas fa-file-alt me-2"></i>Evaluations
+                            <?php if ($pending_evals > 0): ?><span
+                                    class="badge bg-warning text-dark ms-1"><?php echo $pending_evals; ?></span><?php endif; ?>
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link" id="cm-tab" data-bs-toggle="tab" data-bs-target="#movements" type="button" role="tab">
+                        <button class="nav-link" id="cm-tab" data-bs-toggle="tab" data-bs-target="#movements"
+                            type="button" role="tab">
                             <i class="fas fa-exchange-alt me-2"></i>Career Movements
-                            <?php if ($pending_movements > 0): ?><span class="badge bg-warning text-dark ms-1"><?php echo $pending_movements; ?></span><?php endif; ?>
+                            <?php if ($pending_movements > 0): ?><span
+                                    class="badge bg-warning text-dark ms-1"><?php echo $pending_movements; ?></span><?php endif; ?>
                         </button>
                     </li>
                 </ul>
@@ -185,20 +196,27 @@ while ($row = $status_dist->fetch_assoc()) {
                                 </thead>
                                 <tbody>
                                     <?php if ($pending_evals_list->num_rows === 0): ?>
-                                        <tr><td colspan="5" class="text-center text-muted py-4">No pending evaluations.</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">No pending evaluations.</td>
+                                        </tr>
                                     <?php else: ?>
                                         <?php while ($row = $pending_evals_list->fetch_assoc()): ?>
                                             <tr>
                                                 <td><strong><?php echo e($row['employee_name']); ?></strong></td>
                                                 <td><?php echo e($row['submitted_by_name']); ?></td>
                                                 <td><small><?php echo formatDate($row['submitted_date']); ?></small></td>
-                                                <td><span class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?>"><?php echo $row['total_score']; ?>%</span></td>
-                                                <td><a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php?review=<?php echo $row['evaluation_id']; ?>" class="btn btn-sm btn-primary">Review</a></td>
+                                                <td><span
+                                                        class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?>"><?php echo $row['total_score']; ?>%</span>
+                                                </td>
+                                                <td><a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php?review=<?php echo $row['evaluation_id']; ?>"
+                                                        class="btn btn-sm btn-primary">Review</a></td>
                                             </tr>
                                         <?php endwhile; ?>
                                         <tr>
                                             <td colspan="5" class="text-center bg-light">
-                                                <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php" class="text-decoration-none small fw-bold">View All Pending Evaluations</a>
+                                                <a href="<?php echo BASE_URL; ?>/manager/pending-approvals.php"
+                                                    class="text-decoration-none small fw-bold">View All Pending
+                                                    Evaluations</a>
                                             </td>
                                         </tr>
                                     <?php endif; ?>
@@ -222,20 +240,28 @@ while ($row = $status_dist->fetch_assoc()) {
                                 </thead>
                                 <tbody>
                                     <?php if ($pending_cm_list->num_rows === 0): ?>
-                                        <tr><td colspan="5" class="text-center text-muted py-4">No pending career movements.</td></tr>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">No pending career movements.
+                                            </td>
+                                        </tr>
                                     <?php else: ?>
                                         <?php while ($row = $pending_cm_list->fetch_assoc()): ?>
                                             <tr>
                                                 <td><strong><?php echo e($row['employee_name']); ?></strong></td>
-                                                <td><span class="badge bg-info text-dark"><?php echo e($row['movement_type']); ?></span></td>
+                                                <td><span
+                                                        class="badge bg-info text-dark"><?php echo e($row['movement_type']); ?></span>
+                                                </td>
                                                 <td><small><?php echo formatDate($row['effective_date']); ?></small></td>
                                                 <td><?php echo e($row['logged_by_name']); ?></td>
-                                                <td><a href="<?php echo BASE_URL; ?>/manager/career-movement-approval.php" class="btn btn-sm btn-primary">Review</a></td>
+                                                <td><a href="<?php echo BASE_URL; ?>/manager/career-movement-approval.php"
+                                                        class="btn btn-sm btn-primary">Review</a></td>
                                             </tr>
                                         <?php endwhile; ?>
                                         <tr>
                                             <td colspan="5" class="text-center bg-light">
-                                                <a href="<?php echo BASE_URL; ?>/manager/career-movement-approval.php" class="text-decoration-none small fw-bold">View All Pending Movements</a>
+                                                <a href="<?php echo BASE_URL; ?>/manager/career-movement-approval.php"
+                                                    class="text-decoration-none small fw-bold">View All Pending
+                                                    Movements</a>
                                             </td>
                                         </tr>
                                     <?php endif; ?>
