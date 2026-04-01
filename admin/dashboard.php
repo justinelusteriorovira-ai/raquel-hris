@@ -7,67 +7,45 @@ require_once '../includes/header.php';
 // Fetch stats
 $total_users = $conn->query("SELECT COUNT(*) as c FROM users")->fetch_assoc()['c'];
 $active_users = $conn->query("SELECT COUNT(*) as c FROM users WHERE is_active = 1")->fetch_assoc()['c'];
-$total_employees = $conn->query("SELECT COUNT(*) as c FROM employees WHERE is_active = 1")->fetch_assoc()['c'];
-$pending_evals = $conn->query("SELECT COUNT(*) as c FROM evaluations WHERE status IN ('Pending Supervisor', 'Pending Manager')")->fetch_assoc()['c'];
+$total_branches = $conn->query("SELECT COUNT(*) as c FROM branches WHERE deleted_at IS NULL")->fetch_assoc()['c'];
+$recent_logs = $conn->query("SELECT COUNT(*) as c FROM audit_logs WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")->fetch_assoc()['c'];
 
-// --- ANALYTICS DATA FETCHING ---
+// --- SYSTEM ANALYTICS ---
 
-// 1. Employee Status Distribution
-$status_res = $conn->query("SELECT employment_status, COUNT(*) as count FROM employees WHERE is_active = 1 AND deleted_at IS NULL GROUP BY employment_status");
-$status_labels = [];
-$status_counts = [];
+// 1. User Roles Distribution
+$roles_res = $conn->query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
+$role_labels = [];
+$role_counts = [];
+while ($row = $roles_res->fetch_assoc()) {
+    $role_labels[] = $row['role'];
+    $role_counts[] = (int) $row['count'];
+}
+
+// 2. Account Status Breakdown
+$status_res = $conn->query("SELECT is_active, COUNT(*) as count FROM users GROUP BY is_active");
+$status_labels = ['Inactive', 'Active'];
+$status_counts = [0, 0];
 while ($row = $status_res->fetch_assoc()) {
-    $status_labels[] = $row['employment_status'];
-    $status_counts[] = (int) $row['count'];
+    $status_counts[(int)$row['is_active']] = (int)$row['count'];
 }
 
-// 2. Department Distribution
-$dept_res = $conn->query("SELECT department, COUNT(*) as count FROM employees WHERE is_active = 1 AND deleted_at IS NULL GROUP BY department ORDER BY count DESC");
-$dept_labels = [];
-$dept_counts = [];
-while ($row = $dept_res->fetch_assoc()) {
-    $dept_labels[] = $row['department'];
-    $dept_counts[] = (int) $row['count'];
+// 3. System Activity (Last 7 Days)
+$activity_res = $conn->query("SELECT DATE_FORMAT(timestamp, '%b %d') as label, COUNT(*) as count 
+                              FROM audit_logs 
+                              WHERE timestamp >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) 
+                              GROUP BY DATE(timestamp), DATE_FORMAT(timestamp, '%b %d') 
+                              ORDER BY DATE(timestamp) ASC");
+$activity_labels = [];
+$activity_counts = [];
+if ($activity_res) {
+    while ($row = $activity_res->fetch_assoc()) {
+        $activity_labels[] = $row['label'];
+        $activity_counts[] = (int) $row['count'];
+    }
 }
 
-// 3. Gender Distribution
-$gender_res = $conn->query("SELECT gender, COUNT(*) as count FROM employees WHERE is_active = 1 AND deleted_at IS NULL GROUP BY gender");
-$gender_labels = [];
-$gender_counts = [];
-while ($row = $gender_res->fetch_assoc()) {
-    $gender_labels[] = $row['gender'] ?? 'Unknown';
-    $gender_counts[] = (int) $row['count'];
-}
-
-// 4. Hiring Trends (Last 12 Months)
-$hiring_res = $conn->query("SELECT DATE_FORMAT(hire_date, '%b %Y') as month_label, COUNT(*) as count 
-                            FROM employees 
-                            WHERE hire_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 12 MONTH) 
-                            GROUP BY DATE_FORMAT(hire_date, '%Y-%m') 
-                            ORDER BY DATE_FORMAT(hire_date, '%Y-%m') ASC");
-$hiring_labels = [];
-$hiring_counts = [];
-while ($row = $hiring_res->fetch_assoc()) {
-    $hiring_labels[] = $row['month_label'];
-    $hiring_counts[] = (int) $row['count'];
-}
-
-// 5. Departmental Performance (Avg Score)
-$perf_res = $conn->query("SELECT e.department, AVG(ev.total_score) as avg_score 
-                          FROM evaluations ev 
-                          JOIN employees e ON ev.employee_id = e.employee_id 
-                          WHERE ev.status = 'Approved' 
-                          GROUP BY e.department 
-                          ORDER BY avg_score DESC");
-$perf_labels = [];
-$perf_scores = [];
-while ($row = $perf_res->fetch_assoc()) {
-    $perf_labels[] = $row['department'];
-    $perf_scores[] = round((float) $row['avg_score'], 1);
-}
-
-// Existing logic for branch users and audit logs
-$branches_res = $conn->query("SELECT * FROM branches ORDER BY branch_name");
+// Branch data for table
+$branches_res = $conn->query("SELECT * FROM branches WHERE deleted_at IS NULL ORDER BY branch_name");
 $branches = [];
 while ($row = $branches_res->fetch_assoc()) {
     $branches[] = $row;
@@ -81,106 +59,84 @@ if ($selected_branch_id) {
     $branch_active_users = $stmt->get_result();
     $stmt->close();
 }
+
 $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOIN users u ON al.user_id = u.user_id ORDER BY al.timestamp DESC LIMIT 10");
 ?>
+
+<div class="dashboard-header mb-4">
+    <h2 class="fw-bold">System Overview</h2>
+    <p class="text-muted">Security oversight and user management control center</p>
+</div>
 
 <!-- Statistics Cards -->
 <div class="row g-3 mb-4">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card">
-            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+            <div class="stat-icon blue"><i class="fas fa-users-cog"></i></div>
             <div class="stat-info">
                 <h3><?php echo $total_users; ?></h3>
-                <p>Total Users</p>
+                <p>Total User Accounts</p>
             </div>
         </div>
     </div>
     <div class="col-lg-3 col-md-6">
         <div class="stat-card">
-            <div class="stat-icon green"><i class="fas fa-user-tie"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $total_employees; ?></h3>
-                <p>Total Employees</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon orange"><i class="fas fa-file-signature"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $pending_evals; ?></h3>
-                <p>Pending Evaluations</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon purple"><i class="fas fa-user-check"></i></div>
+            <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
             <div class="stat-info">
                 <h3><?php echo $active_users; ?></h3>
-                <p>Active System Users</p>
+                <p>Active Sessions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-building"></i></div>
+            <div class="stat-info">
+                <h3><?php echo $total_branches; ?></h3>
+                <p>Registered Branches</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon orange"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-info">
+                <h3><?php echo $recent_logs; ?></h3>
+                <p>Logs (Last 24h)</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Analytics Row 1 -->
+<!-- System Analytics -->
 <div class="row g-4 mb-4">
     <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header">
-                <h5><i class="fas fa-chart-pie me-2"></i>Employment Status</h5>
+                <h5><i class="fas fa-user-tag me-2"></i>User Roles Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="rolesChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-toggle-on me-2"></i>Account Status</h5>
             </div>
             <div class="card-body">
                 <canvas id="statusChart" style="max-height: 250px;"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-lg-8">
+    <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header">
-                <h5><i class="fas fa-chart-bar me-2"></i>Department Distribution</h5>
+                <h5><i class="fas fa-chart-line me-2"></i>Activity Trend (7 Days)</h5>
             </div>
             <div class="card-body">
-                <canvas id="deptChart" style="max-height: 250px;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Analytics Row 2 -->
-<div class="row g-4 mb-4">
-    <div class="col-lg-7">
-        <div class="content-card h-100">
-            <div class="card-header">
-                <h5><i class="fas fa-chart-line me-2"></i>Hiring Trends (12 Months)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="hiringChart" style="max-height: 250px;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-5">
-        <div class="content-card h-100">
-            <div class="card-header">
-                <h5><i class="fas fa-venus-mars me-2"></i>Gender Diversity</h5>
-            </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <canvas id="genderChart" style="max-height: 250px;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Performance Analytics -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="content-card">
-            <div class="card-header">
-                <h5><i class="fas fa-star me-2"></i>Departmental Performance (Avg Score)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="perfChart" style="max-height: 300px;"></canvas>
+                <canvas id="activityChart" style="max-height: 250px;"></canvas>
             </div>
         </div>
     </div>
@@ -191,7 +147,7 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
     <div class="col-lg-6">
         <div class="content-card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-building me-2"></i>Active Users by Branch</h5>
+                <h5><i class="fas fa-shield-alt me-2"></i>User Access by Branch</h5>
                 <form method="GET" class="d-flex align-items-center" style="max-width: 200px;">
                     <select name="branch_id" class="form-select form-select-sm" onchange="this.form.submit()">
                         <?php foreach ($branches as $b): ?>
@@ -207,15 +163,15 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Name</th>
-                                <th>Role</th>
+                                <th>System User</th>
+                                <th>Access Role</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!$branch_active_users || $branch_active_users->num_rows === 0): ?>
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">No active users.</td>
+                                    <td colspan="3" class="text-center text-muted py-4">No active users in selected branch.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php while ($u = $branch_active_users->fetch_assoc()): ?>
@@ -233,13 +189,12 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
         </div>
     </div>
 
-    <!-- Recent Activity -->
+    <!-- Recent Security Activity -->
     <div class="col-lg-6">
         <div class="content-card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-history me-2"></i>Recent Activity</h5>
-                <a href="<?php echo BASE_URL; ?>/admin/audit-trail.php" class="btn btn-sm btn-outline-primary">View
-                    All</a>
+                <h5><i class="fas fa-history me-2"></i>Recent Security Activity</h5>
+                <a href="<?php echo BASE_URL; ?>/admin/audit-trail.php" class="btn btn-sm btn-outline-primary">View Full Trail</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -247,19 +202,19 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
                         <thead>
                             <tr>
                                 <th>User</th>
-                                <th>Action</th>
+                                <th>Operation</th>
                                 <th>Timestamp</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if ($audit_logs->num_rows === 0): ?>
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted py-4">No activity.</td>
+                                    <td colspan="3" class="text-center text-muted py-4">No security logs recorded.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php while ($log = $audit_logs->fetch_assoc()): ?>
                                     <tr>
-                                        <td><?php echo e($log['full_name'] ?? 'System'); ?></td>
+                                        <td><?php echo e($log['full_name'] ?? 'System Process'); ?></td>
                                         <td><span class="badge bg-secondary"><?php echo e($log['action_type']); ?></span></td>
                                         <td><small><?php echo formatDateTime($log['timestamp']); ?></small></td>
                                     </tr>
@@ -283,48 +238,44 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
             }
         };
 
-        // 1. Employment Status (Doughnut)
-        new Chart(document.getElementById('statusChart'), {
-            type: 'doughnut',
+        // 1. Roles Chart (Pie)
+        new Chart(document.getElementById('rolesChart'), {
+            type: 'pie',
             data: {
-                labels: <?php echo json_encode($status_labels); ?>,
+                labels: <?php echo json_encode($role_labels); ?>,
                 datasets: [{
-                    data: <?php echo json_encode($status_counts); ?>,
-                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                    data: <?php echo json_encode($role_counts); ?>,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e'],
                     hoverOffset: 4
                 }]
             },
             options: commonOptions
         });
 
-        // 2. Department Distribution (Horizontal Bar)
-        new Chart(document.getElementById('deptChart'), {
-            type: 'bar',
+        // 2. Status Chart (Doughnut)
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
             data: {
-                labels: <?php echo json_encode($dept_labels); ?>,
+                labels: <?php echo json_encode($status_labels); ?>,
                 datasets: [{
-                    label: 'Employees',
-                    data: <?php echo json_encode($dept_counts); ?>,
-                    backgroundColor: '#4e73df'
+                    data: <?php echo json_encode($status_counts); ?>,
+                    backgroundColor: ['#e74a3b', '#1cc88a'],
+                    hoverOffset: 4
                 }]
             },
-            options: {
-                ...commonOptions,
-                indexAxis: 'y',
-                plugins: { legend: { display: false } }
-            }
+            options: commonOptions
         });
 
-        // 3. Hiring Trends (Line)
-        new Chart(document.getElementById('hiringChart'), {
+        // 3. Activity Trend (Line)
+        new Chart(document.getElementById('activityChart'), {
             type: 'line',
             data: {
-                labels: <?php echo json_encode($hiring_labels); ?>,
+                labels: <?php echo json_encode($activity_labels); ?>,
                 datasets: [{
-                    label: 'New Hires',
-                    data: <?php echo json_encode($hiring_counts); ?>,
-                    borderColor: '#1cc88a',
-                    backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                    label: 'Audit Events',
+                    data: <?php echo json_encode($activity_counts); ?>,
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.05)',
                     fill: true,
                     tension: 0.3
                 }]
@@ -332,36 +283,6 @@ $audit_logs = $conn->query("SELECT al.*, u.full_name FROM audit_logs al LEFT JOI
             options: {
                 ...commonOptions,
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-            }
-        });
-
-        // 4. Gender Diversity (Pie)
-        new Chart(document.getElementById('genderChart'), {
-            type: 'pie',
-            data: {
-                labels: <?php echo json_encode($gender_labels); ?>,
-                datasets: [{
-                    data: <?php echo json_encode($gender_counts); ?>,
-                    backgroundColor: ['#4e73df', '#f66d9b', '#6c757d']
-                }]
-            },
-            options: commonOptions
-        });
-
-        // 5. Performance (Bar)
-        new Chart(document.getElementById('perfChart'), {
-            type: 'bar',
-            data: {
-                labels: <?php echo json_encode($perf_labels); ?>,
-                datasets: [{
-                    label: 'Avg Score (%)',
-                    data: <?php echo json_encode($perf_scores); ?>,
-                    backgroundColor: '#f6c23e'
-                }]
-            },
-            options: {
-                ...commonOptions,
-                scales: { y: { beginAtZero: true, max: 100 } }
             }
         });
     });

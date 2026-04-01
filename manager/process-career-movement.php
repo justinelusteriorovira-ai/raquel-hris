@@ -76,6 +76,25 @@ if ($updateStmt->execute()) {
         );
     }
 
+    // NEW: Notify the affected employee
+    $emp_user_q = $conn->prepare("SELECT u.user_id FROM users u 
+                                  JOIN employee_contacts ec ON u.email = ec.personal_email 
+                                  WHERE ec.employee_id = ?");
+    $emp_id_val = $movement['employee_id'];
+    $emp_user_q->bind_param("i", $emp_id_val);
+    $emp_user_q->execute();
+    $emp_user = $emp_user_q->get_result()->fetch_assoc();
+    if ($emp_user) {
+        createNotification(
+            $conn,
+            $emp_user['user_id'],
+            "Career Movement " . ($status === 'Approved' ? 'Approved' : 'Rejected'),
+            "Your career movement ({$movement['movement_type']}) has been {$status} by the HR Manager.",
+            BASE_URL . '/staff/career-history.php'
+        );
+    }
+    $emp_user_q->close();
+
     $msg = $status === 'Approved'
         ? "Career movement approved. Employee record will be updated on or after {$movement['effective_date']}."
         : "Career movement has been rejected.";

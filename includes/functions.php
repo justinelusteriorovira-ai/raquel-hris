@@ -189,4 +189,29 @@ function displayFlashMessage()
         echo '</div>';
     }
 }
+
+/**
+ * Get a single system setting by key
+ */
+function getSetting($conn, $key, $default = null)
+{
+    $stmt = $conn->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+    $stmt->bind_param("s", $key);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $res ? $res['setting_value'] : $default;
+}
+
+/**
+ * Update a system setting
+ */
+function updateSetting($conn, $key, $value)
+{
+    $stmt = $conn->prepare("INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+    $stmt->bind_param("sss", $key, $value, $value);
+    $success = $stmt->execute();
+    $stmt->close();
+    return $success;
+}
 ?>

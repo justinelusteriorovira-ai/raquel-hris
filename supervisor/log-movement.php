@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $managers = $conn->query("SELECT user_id FROM users WHERE role = 'HR Manager' AND is_active = 1");
         $emp_name_q = $conn->query("SELECT CONCAT(first_name, ' ', last_name) as name FROM employees WHERE employee_id = $employee_id")->fetch_assoc();
         while ($mgr = $managers->fetch_assoc()) {
-            createNotification($conn, $mgr['user_id'], 'Career Movement Logged', "A {$movement_type} has been logged for {$emp_name_q['name']}.", BASE_URL . '/manager/dashboard.php');
+            createNotification($conn, $mgr['user_id'], 'Career Movement Logged', "A {$movement_type} has been logged for {$emp_name_q['name']}.", BASE_URL . '/manager/career-movement-approval.php');
         }
 
         logAudit($conn, $_SESSION['user_id'], 'CREATE', 'Career Movement', $movement_id, "Logged {$movement_type} for {$emp_name_q['name']}");
