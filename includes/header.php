@@ -112,6 +112,9 @@ switch ($_SESSION['role']) {
             'NOTIFICATIONS' => [
                 ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/manager/notifications.php', 'page' => 'notifications.php'],
             ],
+            'SETTINGS' => [
+                ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/manager/profile-settings.php', 'page' => 'profile-settings.php'],
+            ],
         ];
         break;
 
@@ -136,6 +139,9 @@ switch ($_SESSION['role']) {
             'NOTIFICATIONS' => [
                 ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/supervisor/notifications.php', 'page' => 'notifications.php'],
             ],
+            'SETTINGS' => [
+                ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/supervisor/profile-settings.php', 'page' => 'profile-settings.php'],
+            ],
         ];
         break;
 
@@ -150,17 +156,17 @@ switch ($_SESSION['role']) {
                 ['icon' => 'fas fa-paper-plane', 'label' => 'My Submissions', 'url' => BASE_URL . '/staff/my-submissions.php', 'page' => 'my-submissions.php'],
             ],
             'SEARCH' => [
-                ['icon' => 'fas fa-search', 'label' => 'Employee Search', 'url' => BASE_URL . '/staff/search-employees.php', 'page' => 'search-employees.php', 'class' => 'coming-soon'],
+                ['icon' => 'fas fa-search', 'label' => 'Employee Search', 'url' => BASE_URL . '/staff/search-employees.php', 'page' => 'search-employees.php'],
             ],
             'VIEWING' => [
-                ['icon' => 'fas fa-file-alt', 'label' => 'Template Viewing', 'url' => BASE_URL . '/staff/templates.php', 'page' => 'templates.php', 'class' => 'coming-soon'],
+                ['icon' => 'fas fa-file-alt', 'label' => 'Template Viewing', 'url' => BASE_URL . '/staff/templates.php', 'page' => 'templates.php'],
                 ['icon' => 'fas fa-route', 'label' => 'Career History', 'url' => BASE_URL . '/staff/career-history.php', 'page' => 'career-history.php'],
             ],
             'NOTIFICATIONS' => [
                 ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/staff/notifications.php', 'page' => 'notifications.php'],
             ],
             'SETTINGS' => [
-                ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/staff/profile-settings.php', 'page' => 'profile-settings.php', 'class' => 'coming-soon'],
+                ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/staff/profile-settings.php', 'page' => 'profile-settings.php'],
             ],
         ];
         break;
