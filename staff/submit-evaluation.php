@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     while ($crit = $kra_criteria->fetch_assoc()) {
         $cid = $crit['criterion_id'];
         $rating = floatval($kra_scores[$cid] ?? 0);
+        if ($rating > 4.00) $rating = 4.00; // Cap at 4.00
         $weight = floatval($crit['weight']);
         $weighted = round(($weight / 100) * $rating, 2);
         $kra_subtotal += $weighted;
@@ -57,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     while ($crit = $beh_criteria->fetch_assoc()) {
         $cid = $crit['criterion_id'];
         $rating = floatval($beh_scores[$cid] ?? 0);
+        if ($rating > 4.00) $rating = 4.00; // Cap at 4.00
         $beh_total += $rating;
         $beh_count++;
         $beh_score_data[] = ['criterion_id' => $cid, 'score_value' => $rating, 'weighted_score' => $rating];
@@ -138,8 +140,13 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     }
 }
 
-$employees = $conn->query("SELECT employee_id, first_name, last_name, job_title FROM employees WHERE is_active = 1 ORDER BY last_name, first_name");
+$employees = $conn->query("SELECT e.employee_id, e.first_name, e.last_name, e.job_title, d.department_name FROM employees e LEFT JOIN departments d ON e.department_id = d.department_id WHERE e.is_active = 1 ORDER BY e.last_name, e.first_name");
 $templates = $conn->query("SELECT * FROM evaluation_templates WHERE status = 'Active' ORDER BY template_name");
+
+// Get all unique job titles for Desired Position dropdown
+$all_positions = $conn->query("SELECT DISTINCT job_title FROM employees WHERE job_title IS NOT NULL AND job_title != '' ORDER BY job_title");
+$positions_list = [];
+while ($pos = $all_positions->fetch_assoc()) $positions_list[] = $pos['job_title'];
 
 $selected_template_id = $edit_eval['template_id'] ?? ($_GET['template'] ?? '');
 $kra_criteria = [];
@@ -223,7 +230,24 @@ if (!empty($selected_template_id)) {
             <?php endif; ?>
 
             <!-- STEP 1: Info & Period -->
-            <div id="evalStep1" class="form-style-container">
+            <div id="evalStep1" class="form-style-container p-4">
+                <?php if (isset($edit_eval) && $edit_eval['status'] === 'Returned'): ?>
+                    <div class="alert alert-warning border-warning shadow-sm mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
+                            <div>
+                                <h6 class="alert-heading mb-0 fw-bold text-uppercase">Revision Requested</h6>
+                                <small class="text-muted">Please address the feedback from your supervisor below.</small>
+                            </div>
+                        </div>
+                        <hr class="my-2 border-warning opacity-25">
+                        <div class="p-3 bg-white rounded border small shadow-sm">
+                            <div class="fw-bold text-dark mb-1"><i class="fas fa-comment-dots me-1"></i>Supervisor Feedback:</div>
+                            <div class="text-dark italic"><?php echo nl2br(e($edit_eval['supervisor_comments'])); ?></div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <div class="form-header-box">
                     <div class="form-logo-box">
                         <img src="https://raquelpawnshop.com/wp-content/uploads/2023/05/png-logo.png" style="max-width:110px; opacity:0.8;" alt="Logo">
@@ -294,9 +318,9 @@ if (!empty($selected_template_id)) {
                             <select class="form-select form-select-lg border-primary mb-4" name="template_id" id="templateSelect" required onchange="loadCriteria()">
                                 <option value="">-- Choose Template --</option>
                                 <?php $templates->data_seek(0); while ($t = $templates->fetch_assoc()): ?>
-                                    <option value="<?php echo $t['template_id']; ?>"
+                                    <option value="<?php echo $t['template_id']; ?>" data-target="<?php echo htmlspecialchars($t['target_position'] ?? 'All Positions'); ?>"
                                         <?php echo ($edit_eval && $edit_eval['template_id'] == $t['template_id']) ? 'selected' : ''; ?>>
-                                        <?php echo e($t['template_name']); ?>
+                                        <?php echo e($t['template_name']); ?> (<?php echo e($t['target_position'] ?? 'All Positions'); ?>)
                                     </option>
                                 <?php endwhile; ?>
                             </select>
@@ -377,7 +401,7 @@ if (!empty($selected_template_id)) {
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="small fw-bold">Current Position</label>
-                                        <input type="text" class="form-control form-control-sm" name="current_position" id="currentPosInput" value="<?php echo e($edit_eval['current_position'] ?? ''); ?>">
+                                        <input type="text" class="form-control form-control-sm bg-light" name="current_position" id="currentPosInput" value="<?php echo e($edit_eval['current_position'] ?? ''); ?>" readonly>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small fw-bold">Months in position</label>
@@ -385,7 +409,14 @@ if (!empty($selected_template_id)) {
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small fw-bold text-primary">Desired Position (Career Goal)</label>
-                                        <input type="text" class="form-control form-control-sm border-primary" name="desired_position" value="<?php echo e($edit_eval['desired_position'] ?? ''); ?>">
+                                        <select class="form-select form-select-sm border-primary" name="desired_position">
+                                            <option value="">-- Select Desired Position --</option>
+                                            <?php foreach ($positions_list as $pos): ?>
+                                                <option value="<?php echo e($pos); ?>" <?php echo (isset($edit_eval['desired_position']) && $edit_eval['desired_position'] == $pos) ? 'selected' : ''; ?>>
+                                                    <?php echo e($pos); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small fw-bold text-primary">Target Date</label>
@@ -445,7 +476,12 @@ function goToStep(step) {
     if (step === 5) updateSummary();
 }
 
-const employees = <?php echo json_encode($conn->query("SELECT employee_id, job_title FROM employees")->fetch_all(MYSQLI_ASSOC)); ?>;
+const employees = <?php 
+    $emp_data = [];
+    $employees->data_seek(0);
+    while($row = $employees->fetch_assoc()) $emp_data[] = $row;
+    echo json_encode($emp_data); 
+?>;
 
 function loadCriteria() {
     const templateId = document.getElementById('templateSelect').value;
@@ -499,7 +535,8 @@ function loadCriteria() {
 function calculateAllScores() {
     let kraSubTotal = 0, kraWeightTotal = 0;
     document.querySelectorAll('.kra-score-input').forEach(input => {
-        const rating = parseFloat(input.value) || 0;
+        let rating = parseFloat(input.value) || 0;
+        if (rating > 4.00) { rating = 4.00; input.value = "4.00"; }
         const weight = parseFloat(input.dataset.weight) || 0;
         kraWeightTotal += weight;
         const total = (weight / 100) * rating;
@@ -519,7 +556,8 @@ function calculateAllScores() {
 
     let behTotal = 0, behCount = 0;
     document.querySelectorAll('.beh-score-input').forEach(input => {
-        const rating = parseFloat(input.value) || 0;
+        let rating = parseFloat(input.value) || 0;
+        if (rating > 4.00) { rating = 4.00; input.value = "4.00"; }
         if (rating > 0) { behTotal += rating; behCount++; }
     });
     const behAvg = behCount > 0 ? behTotal / behCount : 0;
@@ -563,14 +601,61 @@ function esc(str) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('empSelect').addEventListener('change', function() {
-        const emp = employees.find(e => e.employee_id == this.value);
-        if (emp) {
-            document.getElementById('currentPosStatic').value = emp.job_title;
-            const target = document.getElementById('currentPosInput');
-            if (target) target.value = emp.job_title;
+    // Consolidated Employee Selection Logic
+    const empSelect = document.getElementById('empSelect');
+    if (empSelect) {
+        empSelect.addEventListener('change', function() {
+            const emp = employees.find(e => e.employee_id == this.value);
+            if (emp) {
+                const jobTitle = emp.job_title || 'N/A';
+                const departmentName = emp.department_name || '';
+                // Update Step 1 Static Display
+                const staticPos = document.getElementById('currentPosStatic');
+                if (staticPos) staticPos.value = jobTitle;
+                
+                // Update Step 5 Input
+                const targetInput = document.getElementById('currentPosInput');
+                if (targetInput) targetInput.value = jobTitle;
+                
+                // Filter Templates Step 2 Based on Employee's Department
+                const tmplSelect = document.getElementById('templateSelect');
+                if (tmplSelect) {
+                    let hasValidSelection = false;
+                    const currentValue = tmplSelect.value;
+                    
+                    Array.from(tmplSelect.options).forEach(opt => {
+                        if (opt.value === '') return; // Skip placeholder
+                        const tTarget = opt.getAttribute('data-target');
+                        if (tTarget === 'All Positions' || tTarget === departmentName || !tTarget) {
+                            opt.style.display = '';
+                            if (opt.value === currentValue) hasValidSelection = true;
+                        } else {
+                            opt.style.display = 'none';
+                        }
+                    });
+                    
+                    if (!hasValidSelection && currentValue !== '') {
+                        tmplSelect.value = '';
+                        loadCriteria(); // Clear out the criteria area if template was reset
+                    }
+                }
+            } else {
+                if (document.getElementById('currentPosStatic')) document.getElementById('currentPosStatic').value = '';
+                if (document.getElementById('currentPosInput')) document.getElementById('currentPosInput').value = '';
+                
+                // Show all templates if no employee selected
+                const tmplSelect = document.getElementById('templateSelect');
+                if (tmplSelect) {
+                    Array.from(tmplSelect.options).forEach(opt => opt.style.display = '');
+                }
+            }
+        });
+        
+        // Trigger on load for prepopulated forms in edit mode
+        if (empSelect.value) {
+            empSelect.dispatchEvent(new Event('change'));
         }
-    });
+    }
 
     if (document.querySelectorAll('.dev-plan-row').length === 0) {
         for(let i=0; i<3; i++) addDevPlan();
@@ -592,15 +677,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 <?php endif; ?>
 
-// Auto-fill Current Position when employee is selected
-document.getElementById('empSelect').addEventListener('change', function() {
-    const selected = this.options[this.selectedIndex].text;
-    if (selected.includes(' — ')) {
-        const title = selected.split(' — ')[1];
-        const input = document.getElementById('currentPosInput');
-        if (input && !input.value) input.value = title;
-    }
-});
 
 // Add initial dev plan rows if none exist
 document.addEventListener('DOMContentLoaded', function() {

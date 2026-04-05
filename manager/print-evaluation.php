@@ -263,10 +263,11 @@ if ($_SESSION['role'] === 'HR Staff' && $row['submitted_by'] != $_SESSION['user_
       </tr>
     </thead>
     <tbody>
-      <tr><td>3.60 – 4.00</td><td>Outstanding</td><td>Performance significantly exceeds standards and expectations</td></tr>
-      <tr><td>2.60 – 3.59</td><td>Exceeds Expectations</td><td>Performance exceeds standards and expectations</td></tr>
-      <tr><td>2.00 – 2.59</td><td>Meets Expectations</td><td>Performance meets standards and expectations</td></tr>
-      <tr><td>1.00 – 1.99</td><td>Needs Improvement</td><td>Performance did not meet standards and expectations</td></tr>
+      <?php $pl = $row['performance_level'] ?? ''; ?>
+      <tr <?php echo ($pl === 'Outstanding') ? 'style="background-color:#d4edda !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"' : ''; ?>><td>3.60 – 4.00</td><td>Outstanding</td><td>Performance significantly exceeds standards and expectations</td></tr>
+      <tr <?php echo ($pl === 'Exceeds Expectations') ? 'style="background-color:#cce5ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"' : ''; ?>><td>2.60 – 3.59</td><td>Exceeds Expectations</td><td>Performance exceeds standards and expectations</td></tr>
+      <tr <?php echo ($pl === 'Meets Expectations') ? 'style="background-color:#fff3cd !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"' : ''; ?>><td>2.00 – 2.59</td><td>Meets Expectations</td><td>Performance meets standards and expectations</td></tr>
+      <tr <?php echo ($pl === 'Needs Improvement') ? 'style="background-color:#f8d7da !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"' : ''; ?>><td>1.00 – 1.99</td><td>Needs Improvement</td><td>Performance did not meet standards and expectations</td></tr>
     </tbody>
   </table>
 

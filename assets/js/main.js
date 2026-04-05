@@ -91,6 +91,29 @@ function initDynamicComponents() {
 
 document.addEventListener('DOMContentLoaded', initDynamicComponents);
 
+/**
+ * Common Main JS
+ */
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Prevent FOUC from sidebar collapsed class
+    if (localStorage.getItem('sidebar_collapsed') === 'true') {
+        document.documentElement.classList.add('sidebar-collapsed');
+        const sb = document.getElementById('sidebar');
+        if (sb) {
+            sb.classList.add('collapsed');
+        }
+    }
+
+    // Global Fix: Move all modals to body to prevent Bootstrap z-index layer issues (black shadow bug)
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+});
+
 // Export for PJAX use
 if (typeof window !== 'undefined') {
     window.initDynamicComponents = initDynamicComponents;

@@ -10,7 +10,7 @@ $uid = $_SESSION['user_id'];
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $did = (int)$_GET['delete'];
     // Verify ownership
-    $check = $conn->query("SELECT evaluation_id FROM evaluations WHERE evaluation_id = $did AND submitted_by = $uid AND status = 'Draft'");
+    $check = $conn->query("SELECT evaluation_id FROM evaluations WHERE evaluation_id = $did AND submitted_by = $uid AND status IN ('Draft', 'Returned')");
     if ($check->num_rows > 0) {
         $conn->query("DELETE FROM evaluation_scores WHERE evaluation_id = $did");
         $conn->query("DELETE FROM evaluations WHERE evaluation_id = $did");
@@ -28,7 +28,7 @@ $drafts = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as e
     FROM evaluations ev
     LEFT JOIN employees e ON ev.employee_id = e.employee_id
     LEFT JOIN evaluation_templates et ON ev.template_id = et.template_id
-    WHERE ev.submitted_by = $uid AND ev.status = 'Draft'
+    WHERE ev.submitted_by = $uid AND ev.status IN ('Draft', 'Returned')
     ORDER BY ev.updated_at DESC");
 ?>
 
@@ -59,6 +59,13 @@ $drafts = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as e
                             <div class="draft-meta mb-2">
                                 <i class="fas fa-calendar me-1"></i>Last modified: <?php echo formatDateTime($draft['updated_at']); ?>
                             </div>
+                            <?php if ($draft['status'] === 'Returned'): ?>
+                                <div class="mb-2">
+                                    <span class="badge bg-warning text-dark rounded-pill px-2" style="font-size:0.7rem;">
+                                        <i class="fas fa-undo me-1"></i>Returned for Revision
+                                    </span>
+                                </div>
+                            <?php endif; ?>
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between mb-1">
                                     <small>Completion</small>
@@ -69,8 +76,9 @@ $drafts = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as e
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
-                                <a href="<?php echo BASE_URL; ?>/staff/submit-evaluation.php?edit=<?php echo $draft['evaluation_id']; ?>" class="btn btn-sm btn-primary flex-fill">
-                                    <i class="fas fa-edit me-1"></i>Continue
+                                <a href="<?php echo BASE_URL; ?>/staff/submit-evaluation.php?edit=<?php echo $draft['evaluation_id']; ?>" class="btn btn-sm <?php echo ($draft['status'] === 'Returned') ? 'btn-warning' : 'btn-primary'; ?> flex-fill fw-bold">
+                                    <i class="fas fa-<?php echo ($draft['status'] === 'Returned') ? 'redo' : 'edit'; ?> me-1"></i>
+                                    <?php echo ($draft['status'] === 'Returned') ? 'Revise' : 'Continue'; ?>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger"
                                         onclick="setDeleteDraft(<?php echo $draft['evaluation_id']; ?>, '<?php echo e(addslashes($draft['employee_name'])); ?>')"

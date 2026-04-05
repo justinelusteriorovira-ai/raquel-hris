@@ -522,6 +522,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mb->close();
         }
 
+        // Re-insert real properties
+        if (!empty($_POST['rprop_desc'])) {
+            $rps = $conn->prepare("INSERT INTO employee_real_properties (employee_id, description, kind, exact_location, assessed_value, market_value, acquisition_year_mode, acquisition_cost) VALUES (?,?,?,?,?,?,?,?)");
+            foreach ($_POST['rprop_desc'] as $i => $rd) {
+                if (empty(trim($rd)))
+                    continue;
+                $rk = trim($_POST['rprop_kind'][$i] ?? '');
+                $rl = trim($_POST['rprop_location'][$i] ?? '');
+                $rav = !empty($_POST['rprop_assessed'][$i]) ? (float) $_POST['rprop_assessed'][$i] : null;
+                $rmv = !empty($_POST['rprop_market'][$i]) ? (float) $_POST['rprop_market'][$i] : null;
+                $ram = trim($_POST['rprop_acq_mode'][$i] ?? '');
+                $rac = !empty($_POST['rprop_acq_cost'][$i]) ? (float) $_POST['rprop_acq_cost'][$i] : null;
+                $rd = trim($rd);
+                $rps->bind_param("isssddsd", $eid, $rd, $rk, $rl, $rav, $rmv, $ram, $rac);
+                $rps->execute();
+            }
+            $rps->close();
+        }
+
+        // Re-insert personal properties
+        if (!empty($_POST['pprop_desc'])) {
+            $pps = $conn->prepare("INSERT INTO employee_personal_properties (employee_id, description, year_acquired, acquisition_cost) VALUES (?,?,?,?)");
+            foreach ($_POST['pprop_desc'] as $i => $pd) {
+                if (empty(trim($pd)))
+                    continue;
+                $py = trim($_POST['pprop_year'][$i] ?? '');
+                $pc = !empty($_POST['pprop_cost'][$i]) ? (float) $_POST['pprop_cost'][$i] : null;
+                $pd = trim($pd);
+                $pps->bind_param("issd", $eid, $pd, $py, $pc);
+                $pps->execute();
+            }
+            $pps->close();
+        }
+
+        // Re-insert liabilities
+        if (!empty($_POST['liab_nature'])) {
+            $lbs = $conn->prepare("INSERT INTO employee_liabilities (employee_id, nature_of_liability, creditor_name, outstanding_balance) VALUES (?,?,?,?)");
+            foreach ($_POST['liab_nature'] as $i => $ln) {
+                if (empty(trim($ln)))
+                    continue;
+                $lc = trim($_POST['liab_creditor'][$i] ?? '');
+                $lb = !empty($_POST['liab_balance'][$i]) ? (float) $_POST['liab_balance'][$i] : null;
+                $ln = trim($ln);
+                $lbs->bind_param("issd", $eid, $ln, $lc, $lb);
+                $lbs->execute();
+            }
+            $lbs->close();
+        }
+
         // Re-insert references
         if (!empty($_POST['ref_name'])) {
             $rf = $conn->prepare("INSERT INTO employee_references (employee_id, reference_name, reference_address, reference_telephone) VALUES (?,?,?,?)");

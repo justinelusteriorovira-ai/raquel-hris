@@ -449,6 +449,12 @@ require_once __DIR__ . '/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Move modal to body to prevent z-index backdrop issues (the "black shadow" bug)
+    const photoModal = document.getElementById('photoModal');
+    if (photoModal) {
+        document.body.appendChild(photoModal);
+    }
+
     // Photo preview
     const photoInput = document.getElementById('photoInput');
     const photoPreview = document.getElementById('photoPreview');

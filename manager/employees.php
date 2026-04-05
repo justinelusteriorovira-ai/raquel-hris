@@ -52,7 +52,148 @@ $employees = $conn->query("
     LEFT JOIN departments d ON e.department_id = d.department_id 
     ORDER BY e.last_name, e.first_name
 ");
+
+// Fetch distinct values for filter dropdowns
+$job_titles_res = $conn->query("SELECT DISTINCT job_title FROM employees WHERE job_title IS NOT NULL AND job_title != '' ORDER BY job_title ASC");
+$job_titles = [];
+while ($r = $job_titles_res->fetch_assoc()) $job_titles[] = $r['job_title'];
+
+$departments_res = $conn->query("SELECT d.department_name FROM departments d ORDER BY d.department_name ASC");
+$departments = [];
+while ($r = $departments_res->fetch_assoc()) $departments[] = $r['department_name'];
+
+$branches_res = $conn->query("SELECT b.branch_name FROM branches b ORDER BY b.branch_name ASC");
+$branches = [];
+while ($r = $branches_res->fetch_assoc()) $branches[] = $r['branch_name'];
+
+$statuses = ['Regular', 'Probationary', 'Contractual'];
 ?>
+
+<style>
+    /* Filter Toolbar */
+    .filter-toolbar {
+        padding: 16px 20px;
+        background: linear-gradient(135deg, #f8f9fc 0%, #f1f3f8 100%);
+        border-bottom: 1px solid #e8ecf1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+    .filter-group {
+        position: relative;
+        min-width: 180px;
+        flex: 1;
+    }
+    .filter-group label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #8094ae;
+        margin-bottom: 4px;
+    }
+    .filter-group select {
+        width: 100%;
+        padding: 8px 32px 8px 12px;
+        border: 1px solid #dce3ed;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #344357;
+        transition: all 0.2s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238094ae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        cursor: pointer;
+    }
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 59,130,246), 0.1);
+    }
+    .filter-group select.active-filter {
+        border-color: var(--primary-blue);
+        background-color: #eef4ff;
+        color: var(--primary-blue);
+        font-weight: 600;
+    }
+    .filter-actions {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        padding-bottom: 1px;
+    }
+    .filter-summary {
+        padding: 8px 20px;
+        background: #fff;
+        border-bottom: 1px solid #e8ecf1;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .filter-summary.has-filters {
+        display: flex;
+    }
+    .filter-summary .filter-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #8094ae;
+        margin-right: 4px;
+    }
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        background: #eef4ff;
+        border: 1px solid #d0dfff;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--primary-blue);
+        animation: chipIn 0.2s ease;
+    }
+    .filter-chip .chip-category {
+        font-weight: 400;
+        color: #8094ae;
+    }
+    .filter-chip .remove-chip {
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.15s;
+        font-size: 0.65rem;
+    }
+    .filter-chip .remove-chip:hover {
+        opacity: 1;
+    }
+    .btn-clear-filters {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #dc3545;
+        background: none;
+        border: none;
+        padding: 3px 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border-radius: 6px;
+    }
+    .btn-clear-filters:hover {
+        background: #fff5f5;
+    }
+    @keyframes chipIn {
+        from { transform: scale(0.85); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    @media (max-width: 768px) {
+        .filter-group { min-width: 140px; }
+    }
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <p class="text-muted mb-0">Manage employee records</p>
@@ -69,23 +210,72 @@ $employees = $conn->query("
             <input type="text" class="form-control form-control-sm" id="customSearchEmp" placeholder="Search employees...">
         </div>
     </div>
+
+    <!-- Filter Toolbar -->
+    <div class="filter-toolbar" id="filterToolbar">
+        <div class="filter-group">
+            <label><i class="fas fa-briefcase me-1"></i>Job Title</label>
+            <select id="filterJobTitle">
+                <option value="">All Titles</option>
+                <?php foreach ($job_titles as $jt): ?>
+                    <option value="<?php echo e($jt); ?>"><?php echo e($jt); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-sitemap me-1"></i>Department</label>
+            <select id="filterDepartment">
+                <option value="">All Departments</option>
+                <?php foreach ($departments as $dept): ?>
+                    <option value="<?php echo e($dept); ?>"><?php echo e($dept); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-building me-1"></i>Branch</label>
+            <select id="filterBranch">
+                <option value="">All Branches</option>
+                <?php foreach ($branches as $br): ?>
+                    <option value="<?php echo e($br); ?>"><?php echo e($br); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-user-tag me-1"></i>Status</label>
+            <select id="filterStatus">
+                <option value="">All Statuses</option>
+                <?php foreach ($statuses as $st): ?>
+                    <option value="<?php echo e($st); ?>"><?php echo e($st); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+
+    <!-- Active Filter Chips -->
+    <div class="filter-summary" id="filterSummary">
+        <span class="filter-label"><i class="fas fa-filter me-1"></i>Filters:</span>
+        <div id="filterChips"></div>
+        <button class="btn-clear-filters" id="clearAllFilters" title="Clear all filters">
+            <i class="fas fa-times me-1"></i>Clear All
+        </button>
+    </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover" id="empTable">
                 <thead>
                     <tr>
-                        <th style="cursor: pointer;" onclick="sortTable(0)">Name <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
-                        <th style="cursor: pointer;" onclick="sortTable(1)">Job Title <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
-                        <th style="cursor: pointer;" onclick="sortTable(2)">Department <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
-                        <th style="cursor: pointer;" onclick="sortTable(3)">Branch <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
-                        <th style="cursor: pointer;" onclick="sortTable(4)">Status <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
-                        <th style="cursor: pointer;" onclick="sortTable(5)">Hire Date <i class="fas fa-sort text-muted ms-1" style="font-size: 0.8rem;"></i></th>
+                        <th>Name</th>
+                        <th>Job Title</th>
+                        <th>Department</th>
+                        <th>Branch</th>
+                        <th>Status</th>
+                        <th>Hire Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php while ($emp = $employees->fetch_assoc()): ?>
-                        <tr>
+                        <tr data-jobtitle="<?php echo e($emp['job_title']); ?>" data-department="<?php echo e($emp['department_name'] ?? 'N/A'); ?>" data-branch="<?php echo e($emp['branch_name'] ?? 'N/A'); ?>" data-status="<?php echo e($emp['employment_status']); ?>">
                             <td>
                                 <div class="d-flex align-items-center">
                                     <?php if (!empty($emp['profile_picture']) && file_exists('../assets/img/employees/' . $emp['profile_picture'])): ?>
@@ -224,41 +414,67 @@ function setDeleteTarget(id, name) {
 }
 
 // State Variables
-let sortDirection = false;
-let currentSortColumn = -1;
 let currentPage = 1;
 const ITEMS_PER_PAGE = 10;
 
-function sortTable(columnIndex) {
-    if (currentSortColumn === columnIndex) {
-        sortDirection = !sortDirection;
-    } else {
-        currentSortColumn = columnIndex;
-        sortDirection = false;
-    }
-    
-    // Update icons
-    const ths = document.querySelectorAll("#empTable thead th");
-    ths.forEach((th, idx) => {
-        const icon = th.querySelector("i.fas");
-        if (icon) {
-            if (idx === columnIndex) {
-                icon.className = sortDirection ? "fas fa-sort-up ms-1" : "fas fa-sort-down ms-1";
-                icon.classList.remove("text-muted");
-                icon.classList.add("text-primary");
-            } else {
-                icon.className = "fas fa-sort text-muted ms-1";
-                icon.classList.remove("text-primary");
-            }
+document.getElementById('customSearchEmp').addEventListener('input', function() {
+    currentPage = 1;
+    renderTable();
+});
+
+// --- Dropdown Filter Logic ---
+const filterSelects = ['filterJobTitle', 'filterDepartment', 'filterBranch', 'filterStatus'];
+const filterLabels = { filterJobTitle: 'Job Title', filterDepartment: 'Department', filterBranch: 'Branch', filterStatus: 'Status' };
+
+filterSelects.forEach(id => {
+    document.getElementById(id).addEventListener('change', function() {
+        currentPage = 1;
+        this.classList.toggle('active-filter', this.value !== '');
+        renderTable();
+        updateFilterChips();
+    });
+});
+
+function updateFilterChips() {
+    const chipsContainer = document.getElementById('filterChips');
+    const summary = document.getElementById('filterSummary');
+    let html = '';
+    let hasAny = false;
+
+    filterSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (el.value !== '') {
+            hasAny = true;
+            html += `<span class="filter-chip"><span class="chip-category">${filterLabels[id]}:</span> ${el.value} <i class="fas fa-times remove-chip" data-filter="${id}"></i></span>`;
         }
     });
 
-    renderTable();
+    chipsContainer.innerHTML = html;
+    summary.classList.toggle('has-filters', hasAny);
+
+    // Bind remove chip clicks
+    chipsContainer.querySelectorAll('.remove-chip').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filterId = this.dataset.filter;
+            const select = document.getElementById(filterId);
+            select.value = '';
+            select.classList.remove('active-filter');
+            currentPage = 1;
+            renderTable();
+            updateFilterChips();
+        });
+    });
 }
 
-document.getElementById('customSearchEmp').addEventListener('input', function() {
-    currentPage = 1; // Reset to page 1 on search
+document.getElementById('clearAllFilters').addEventListener('click', function() {
+    filterSelects.forEach(id => {
+        const el = document.getElementById(id);
+        el.value = '';
+        el.classList.remove('active-filter');
+    });
+    currentPage = 1;
     renderTable();
+    updateFilterChips();
 });
 
 function goToPage(page) {
@@ -270,15 +486,31 @@ function renderTable() {
     const tbody = document.querySelector("#empTable tbody");
     const allRows = Array.from(tbody.querySelectorAll("tr:not(.no-results-row)"));
     const filterInput = document.getElementById('customSearchEmp').value.toLowerCase().trim();
+
+    // Get dropdown filter values
+    const fJobTitle = document.getElementById('filterJobTitle').value;
+    const fDepartment = document.getElementById('filterDepartment').value;
+    const fBranch = document.getElementById('filterBranch').value;
+    const fStatus = document.getElementById('filterStatus').value;
     
     let visibleRows = [];
     
-    // 1. Filter
+    // 1. Filter (text search + dropdown filters)
     allRows.forEach(row => {
         const cells = Array.from(row.querySelectorAll("td"));
         if (cells.length > 1) {
+            // Text search
             const rowText = cells.slice(0, 6).map(td => td.textContent.trim().replace(/\s+/g, ' ')).join(' ').toLowerCase();
-            if (filterInput === "" || rowText.includes(filterInput)) {
+            const textMatch = filterInput === "" || rowText.includes(filterInput);
+
+            // Dropdown filters (use data attributes for precise matching)
+            const dropdownMatch =
+                (fJobTitle === '' || row.dataset.jobtitle === fJobTitle) &&
+                (fDepartment === '' || row.dataset.department === fDepartment) &&
+                (fBranch === '' || row.dataset.branch === fBranch) &&
+                (fStatus === '' || row.dataset.status === fStatus);
+
+            if (textMatch && dropdownMatch) {
                 visibleRows.push(row);
                 row.classList.remove('filtered-out');
             } else {
@@ -288,27 +520,7 @@ function renderTable() {
         }
     });
 
-    // 2. Sort
-    if (currentSortColumn !== -1) {
-        visibleRows.sort((a, b) => {
-            let valA = a.querySelectorAll("td")[currentSortColumn].textContent.trim();
-            let valB = b.querySelectorAll("td")[currentSortColumn].textContent.trim();
-            
-            if (currentSortColumn === 5) { // Hire Date
-                valA = new Date(valA).getTime() || valA;
-                valB = new Date(valB).getTime() || valB;
-            }
-
-            if (valA < valB) return sortDirection ? -1 : 1;
-            if (valA > valB) return sortDirection ? 1 : -1;
-            return 0;
-        });
-        
-        // Re-append sorted rows to DOM
-        visibleRows.forEach(row => tbody.appendChild(row));
-    }
-
-    // 3. Paginate
+    // 2. Paginate
     const totalPages = Math.ceil(visibleRows.length / ITEMS_PER_PAGE);
     if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
@@ -378,14 +590,17 @@ function updatePaginationUI(totalItems, totalPages) {
 }
 
 function handleNoResults(totalItems, filterInput, tbody) {
+    const hasDropdownFilter = filterSelects.some(id => document.getElementById(id).value !== '');
     let noResultsRow = tbody.querySelector('.no-results-row');
-    if (totalItems === 0 && filterInput !== "") {
+    if (totalItems === 0 && (filterInput !== "" || hasDropdownFilter)) {
         if (!noResultsRow) {
             noResultsRow = document.createElement('tr');
             noResultsRow.className = 'no-results-row text-center';
             tbody.appendChild(noResultsRow);
         }
-        noResultsRow.innerHTML = `<td colspan="7" class="py-4 text-muted"><i class="fas fa-search fa-2x mb-3 d-block"></i>No employees found matching "<strong>${filterInput}</strong>"</td>`;
+        let msg = 'No employees match the current filters.';
+        if (filterInput !== '') msg = `No employees found matching "<strong>${filterInput}</strong>"`;
+        noResultsRow.innerHTML = `<td colspan="7" class="py-4 text-muted"><i class="fas fa-filter fa-2x mb-3 d-block" style="opacity:0.2;"></i>${msg}</td>`;
         noResultsRow.style.display = '';
     } else if (noResultsRow) {
         noResultsRow.remove();

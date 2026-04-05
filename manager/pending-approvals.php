@@ -119,13 +119,29 @@ $all_pending = [];
 while ($row = $pending->fetch_assoc()) {
     $all_pending[] = $row;
 }
+
+// Fetch pending career movements
+$pending_cm = $conn->query("SELECT cm.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.job_title, u.full_name as logged_by_name
+    FROM career_movements cm
+    LEFT JOIN employees e ON cm.employee_id = e.employee_id
+    LEFT JOIN users u ON cm.logged_by = u.user_id
+    WHERE cm.approval_status = 'Pending'
+    ORDER BY cm.created_at DESC");
+
+$cm_count = $pending_cm->num_rows;
+$all_cm = [];
+while ($row = $pending_cm->fetch_assoc()) {
+    $all_cm[] = $row;
+}
+
+$total_pending_all = $pending_count + $cm_count;
 ?>
 
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="content-card text-center p-3 h-100 border-start border-4 border-primary shadow-sm">
-            <div class="display-6 fw-bold text-primary"><?php echo $pending_count; ?></div>
-            <div class="text-muted small fw-bold text-uppercase">Pending Your Approval</div>
+        <div class="content-card text-center p-3 h-100 border-start border-4 border-primary shadow-sm glass-card">
+            <div class="display-6 fw-bold text-primary"><?php echo $total_pending_all; ?></div>
+            <div class="text-muted small fw-bold text-uppercase">Total Pending Actions</div>
         </div>
     </div>
     <div class="col-md-4">
@@ -142,422 +158,406 @@ while ($row = $pending->fetch_assoc()) {
     </div>
 </div>
 
-<div class="content-card border-0 shadow-sm">
-    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
-        <h5 class="mb-0"><i class="fas fa-check-double me-2 text-primary"></i>Pending Evaluations</h5>
-        <div class="search-box">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" class="form-control form-control-sm" id="customSearchPending" placeholder="Search employee or template...">
+
+<style>
+    .approval-center-tabs {
+        background: #fff;
+        border-radius: 12px 12px 0 0;
+        border: 1px solid #f0f0f0;
+        border-bottom: none;
+        padding: 5px 15px 0;
+    }
+    .approval-center-tabs .nav-link {
+        border: none;
+        padding: 15px 25px;
+        font-weight: 600;
+        color: var(--text-muted);
+        position: relative;
+        transition: all 0.3s;
+    }
+    .approval-center-tabs .nav-link.active {
+        color: var(--primary-blue) !important;
+        background: transparent !important;
+    }
+    .approval-center-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 20px;
+        right: 20px;
+        height: 4px;
+        background: var(--primary-blue);
+        border-radius: 10px;
+    }
+    .approval-card-list {
+        background: #fff;
+        border-radius: 0 0 12px 12px;
+        border: 1px solid #f0f0f0;
+        min-height: 400px;
+    }
+    .modern-table thead th {
+        background: rgba(41, 67, 6, 0.03);
+        color: var(--primary-blue);
+        font-weight: 700;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        padding: 15px 20px;
+    }
+    .modern-table tbody td {
+        padding: 18px 20px;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .emp-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--primary-blue);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+</style>
+
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="approval-center-tabs d-flex justify-content-between align-items-center">
+            <ul class="nav nav-tabs border-0" id="approvalTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="evaluations-tab" data-bs-toggle="tab" data-bs-target="#evaluations-pane" type="button" role="tab">
+                        <i class="fas fa-file-signature me-2"></i>Evaluations
+                        <span class="badge rounded-pill bg-primary ms-1"><?php echo $pending_count; ?></span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="movements-tab" data-bs-toggle="tab" data-bs-target="#movements-pane" type="button" role="tab">
+                        <i class="fas fa-route me-2"></i>Career Movements
+                        <span class="badge rounded-pill bg-info text-dark ms-1"><?php echo $cm_count; ?></span>
+                    </button>
+                </li>
+            </ul>
+            <div class="search-box me-3">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="form-control form-control-sm border-0 bg-light" id="unifiedSearch" placeholder="Search approvals...">
+            </div>
         </div>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="pendingTable">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-3">Employee</th>
-                        <th>Position</th>
-                        <th>Submitted By</th>
-                        <th>Date</th>
-                        <th>Score</th>
-                        <th>Level</th>
-                        <th class="text-end pe-3">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($all_pending)): ?>
-                        <tr><td colspan="7" class="text-center text-muted py-5"><i class="fas fa-clipboard-list fa-3x mb-3 d-block opacity-25"></i>No pending evaluations to review.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($all_pending as $row): ?>
+
+        <div class="tab-content approval-card-list shadow-sm" id="approvalTabsContent">
+            <!-- Evaluations Tab -->
+            <div class="tab-pane fade show active" id="evaluations-pane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table modern-table align-middle mb-0" id="evalTable">
+                        <thead>
                             <tr>
-                                <td class="ps-3">
-                                    <div class="fw-bold"><?php echo e($row['employee_name']); ?></div>
-                                    <div class="x-small text-muted"><?php echo e($row['template_name']); ?></div>
-                                </td>
-                                <td><?php echo e($row['job_title']); ?></td>
-                                <td><div class="small"><?php echo e($row['submitted_by_name']); ?></div></td>
-                                <td><small class="text-muted"><?php echo formatDate($row['submitted_date']); ?></small></td>
-                                <td>
-                                    <div class="fw-bold"><?php echo $row['total_score']; ?>%</div>
-                                    <div class="progress mt-1" style="height: 4px; width: 60px;">
-                                        <div class="progress-bar bg-success" style="width: <?php echo min(100, (float)$row['total_score'] / 4 * 100); ?>%;"></div>
-                                    </div>
-                                </td>
-                                <td><span class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?> rounded-pill px-2" style="font-size:0.7rem;"><?php echo e($row['performance_level']); ?></span></td>
-                                <td class="text-end pe-3">
-                                    <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#reviewModal<?php echo $row['evaluation_id']; ?>">
-                                        <i class="fas fa-check-double me-1"></i>Review
-                                    </button>
-                                </td>
+                                <th>Employee & Template</th>
+                                <th>Submitted By</th>
+                                <th>Date</th>
+                                <th>Performance Score</th>
+                                <th class="text-end">Actions</th>
                             </tr>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <!-- Performance Rating Scale -->
-                                            <div class="mb-4">
-                                                <h6 class="fw-bold text-uppercase small text-muted border-bottom pb-2 mb-2"><i class="fas fa-info-circle me-2"></i>Performance Rating Scale</h6>
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-bordered mb-0 small align-middle" style="font-size:0.75rem;">
-                                                        <thead class="bg-light text-center fw-bold">
-                                                            <tr>
-                                                                <th style="width:90px;">Scale</th>
-                                                                <th>Description</th>
-                                                                <th>Definition</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td class="text-center fw-bold">3.60 – 4.00</td>
-                                                                <td class="text-center"><span class="badge bg-success w-100">Outstanding</span></td>
-                                                                <td class="small">Performance significantly exceeds standards and expectations</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="text-center fw-bold">2.60 – 3.59</td>
-                                                                <td class="text-center"><span class="badge bg-primary w-100">Exceeds Expectations</span></td>
-                                                                <td class="small">Performance exceeds standards and expectations</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="text-center fw-bold">2.00 – 2.59</td>
-                                                                <td class="text-center"><span class="badge bg-info w-100">Meets Expectations</span></td>
-                                                                <td class="small">Performance meets standards and expectations</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td class="text-center fw-bold">1.00 – 1.99</td>
-                                                                <td class="text-center"><span class="badge bg-danger w-100">Needs Improvement</span></td>
-                                                                <td class="small">Performance did not meet standards and expectations</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($all_pending)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="fas fa-check-circle fa-3x text-light mb-3"></i>
+                                        <p class="text-muted">No pending evaluations for review.</p>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($all_pending as $row): 
+                                    $initials = strtoupper(substr($row['employee_name'], 0, 1) . substr(explode(' ', $row['employee_name'])[1] ?? '', 0, 1));
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="emp-avatar"><?php echo $initials; ?></div>
+                                                <div>
+                                                    <div class="fw-bold text-dark"><?php echo e($row['employee_name']); ?></div>
+                                                    <small class="text-muted"><?php echo e($row['template_name']); ?></small>
                                                 </div>
                                             </div>
-
-                                            <!-- Section I: KRA -->
-                                            <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-success small">
-                                                <i class="fas fa-bullseye me-2"></i>I. Performance Result: Strategic Programs
-                                                and Job Requirements</h6>
-                                            <div class="table-responsive mb-4">
-                                                <table class="table table-sm table-bordered align-middle">
-                                                    <thead class="bg-light small fw-bold text-center">
-                                                        <tr>
-                                                            <th>Description</th>
-                                                            <th style="width:80px;">Weight</th>
-                                                            <th style="width:80px;">Rating</th>
-                                                            <th style="width:80px;">Total</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php
-                                                        $kra_q = $conn->query("SELECT es.*, ec.criterion_name, ec.description, ec.weight FROM evaluation_scores es JOIN evaluation_criteria ec ON es.criterion_id = ec.criterion_id WHERE es.evaluation_id = {$row['evaluation_id']} AND ec.section = 'KRA' ORDER BY ec.sort_order");
-                                                        while ($k = $kra_q->fetch_assoc()):
-                                                            ?>
-                                                            <tr class="small">
-                                                                <td><strong><?php echo e($k['criterion_name']); ?></strong><?php if ($k['description']): ?><br><small
-                                                                            class="text-muted"><?php echo e($k['description']); ?></small><?php endif; ?>
-                                                                </td>
-                                                                <td class="text-center"><?php echo $k['weight']; ?>%</td>
-                                                                <td class="text-center"><?php echo $k['score_value']; ?></td>
-                                                                <td class="text-center fw-bold text-primary">
-                                                                    <?php echo $k['weighted_score']; ?></td>
-                                                            </tr>
-                                                        <?php endwhile; ?>
-                                                        <tr class="bg-light fw-bold">
-                                                            <td class="text-end small">SUB TOTAL</td>
-                                                            <td class="text-center small">100%</td>
-                                                            <td></td>
-                                                            <td class="text-center text-primary small">
-                                                                <?php echo $row['kra_subtotal']; ?></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <!-- Section II: Behavior -->
-                                            <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-primary small">
-                                                <i class="fas fa-heart me-2"></i>II. Behavior and Values</h6>
-                                            <div class="table-responsive mb-4">
-                                                <table class="table table-sm table-bordered align-middle">
-                                                    <thead class="bg-light small fw-bold text-center">
-                                                        <tr>
-                                                            <th>Behavior Item / KPI</th>
-                                                            <th style="width:100px;">Rating (1-4)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <?php
-                                                        $beh_q = $conn->query("SELECT es.*, ec.criterion_name, ec.kpi_description FROM evaluation_scores es JOIN evaluation_criteria ec ON es.criterion_id = ec.criterion_id WHERE es.evaluation_id = {$row['evaluation_id']} AND ec.section = 'Behavior' ORDER BY ec.sort_order");
-                                                        while ($b = $beh_q->fetch_assoc()):
-                                                            ?>
-                                                            <tr class="small">
-                                                                <td><strong><?php echo e($b['criterion_name']); ?></strong><br><small
-                                                                        class="text-muted"><?php echo e($b['kpi_description']); ?></small>
-                                                                </td>
-                                                                <td class="text-center fw-bold text-primary">
-                                                                    <?php echo $b['score_value']; ?></td>
-                                                            </tr>
-                                                        <?php endwhile; ?>
-                                                        <tr class="bg-light fw-bold small">
-                                                            <td class="text-end">AVERAGE</td>
-                                                            <td class="text-center text-primary">
-                                                                <?php echo $row['behavior_average']; ?></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <!-- Section III: Performance Evaluation Summary -->
-                                            <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-dark small"><i
-                                                    class="fas fa-calculator me-2"></i>III. Performance Evaluation Summary</h6>
-                                            <div class="row mb-4">
-                                                <div class="col-lg-8">
-                                                    <div class="table-responsive">
-                                                        <table class="table table-bordered text-center align-middle mb-0">
-                                                            <thead class="bg-light small fw-bold">
-                                                                <tr>
-                                                                    <th class="text-start">Summary</th>
-                                                                    <th style="width:80px;">Weight</th>
-                                                                    <th style="width:100px;">Rating</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="small">
-                                                                <tr>
-                                                                    <td class="text-start">I. Key Result Areas</td>
-                                                                    <td>80%</td>
-                                                                    <td class="fw-bold">
-                                                                        <?php echo $row['kra_subtotal'] ?? '-'; ?></td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td class="text-start">II. Behavior and Values</td>
-                                                                    <td>20%</td>
-                                                                    <td class="fw-bold">
-                                                                        <?php echo $row['behavior_average'] ?? '-'; ?></td>
-                                                                </tr>
-                                                                <tr class="table-active fw-bold">
-                                                                    <td class="text-end">TOTAL SCORE</td>
-                                                                    <td>100%</td>
-                                                                    <td class="text-primary"><?php echo $row['total_score']; ?>
-                                                                    </td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+                                        </td>
+                                        <td><span class="small text-muted"><?php echo e($row['submitted_by_name']); ?></span></td>
+                                        <td><span class="small text-muted"><?php echo formatDate($row['submitted_date']); ?></span></td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="fw-bold" style="min-width: 40px;"><?php echo $row['total_score']; ?>%</div>
+                                                <div class="progress flex-grow-1" style="height: 6px; max-width: 100px;">
+                                                    <div class="progress-bar <?php echo ($row['total_score'] >= 80) ? 'bg-success' : (($row['total_score'] >= 60) ? 'bg-primary' : 'bg-warning'); ?>" 
+                                                         style="width: <?php echo $row['total_score']; ?>%"></div>
                                                 </div>
-                                                <div class="col-lg-4 text-center d-flex flex-column justify-content-center">
-                                                    <div class="p-2 border rounded bg-white shadow-sm">
-                                                        <div class="small text-uppercase text-muted mb-1">Performance Level
-                                                        </div>
-                                                        <span
-                                                            class="badge <?php echo getPerformanceBadgeClass($row['performance_level']); ?> px-3 py-2"
-                                                            style="font-size:0.9rem;"><?php echo e($row['performance_level'] ?? 'N/A'); ?></span>
-                                                    </div>
+                                                <span class="badge glass-badge rounded-pill"><?php echo e($row['performance_level']); ?></span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-primary px-3 rounded-pill shadow-sm" 
+                                                    data-bs-toggle="modal" data-bs-target="#reviewModal<?php echo $row['evaluation_id']; ?>">
+                                                Review Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Career Movements Tab -->
+            <div class="tab-pane fade" id="movements-pane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table modern-table align-middle mb-0" id="moveTable">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Movement Type</th>
+                                <th>Logged By</th>
+                                <th>Effective Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($all_cm)): ?>
+                                <tr>
+                                    <td colspan="5" class="text-center py-5">
+                                        <i class="fas fa-route fa-3x text-light mb-3"></i>
+                                        <p class="text-muted">No pending career movements for approval.</p>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($all_cm as $row): 
+                                    $initials = strtoupper(substr($row['employee_name'], 0, 1) . substr(explode(' ', $row['employee_name'])[1] ?? '', 0, 1));
+                                ?>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="emp-avatar bg-info text-dark"><?php echo $initials; ?></div>
+                                                <div>
+                                                    <div class="fw-bold text-dark"><?php echo e($row['employee_name']); ?></div>
+                                                    <small class="text-muted"><?php echo e($row['job_title'] ?? 'Staff'); ?></small>
                                                 </div>
                                             </div>
-
-                                            <!-- Section IV: Career Growth -->
-                                            <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-info small"><i
-                                                    class="fas fa-chart-line me-2"></i>IV. Career Growth and Development</h6>
-                                            <div class="table-responsive mb-4">
-                                                <table class="table table-sm table-bordered mb-0">
-                                                    <thead class="bg-light small">
-                                                        <tr>
-                                                            <th>Current Position</th>
-                                                            <th style="width:100px;">Months</th>
-                                                            <th>Desired Position</th>
-                                                            <th style="width:120px;">Target Date</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="small">
-                                                        <tr>
-                                                            <td><?php echo e($row['current_position'] ?? 'N/A'); ?></td>
-                                                            <td class="text-center">
-                                                                <?php echo e($row['months_in_position'] ?? '0'); ?></td>
-                                                            <td class="fw-bold text-primary">
-                                                                <?php echo e($row['desired_position'] ?? 'N/A'); ?></td>
-                                                            <td><?php echo $row['target_date'] ? formatDate($row['target_date']) : 'N/A'; ?>
-                                                            </td>
-                                                        </tr>
-                                                        <?php if (!empty($row['career_growth_details'])): ?>
-                                                            <tr>
-                                                                <td colspan="4" class="bg-light italic"><strong>Admin/Manager
-                                                                        Notes:</strong>
-                                                                    <?php echo e($row['career_growth_details']); ?></td>
-                                                            </tr>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <!-- Section V: Developmental Plan -->
-                                            <h6 class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-warning small">
-                                                <i class="fas fa-seedling me-2"></i>V. Developmental Plan</h6>
-                                            <div class="table-responsive mb-4">
-                                                <table class="table table-sm table-bordered align-middle">
-                                                    <thead class="bg-light small fw-bold text-center">
-                                                        <tr>
-                                                            <th>Area of Improvement</th>
-                                                            <th>Support Needed</th>
-                                                            <th>Time Frame</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody class="small">
-                                                        <?php
-                                                        $dev_q = $conn->query("SELECT * FROM evaluation_dev_plans WHERE evaluation_id = {$row['evaluation_id']} ORDER BY sort_order");
-                                                        if ($dev_q->num_rows > 0):
-                                                            while ($dp = $dev_q->fetch_assoc()): ?>
-                                                                <tr>
-                                                                    <td><?php echo e($dp['improvement_area']); ?></td>
-                                                                    <td><?php echo e($dp['support_needed']); ?></td>
-                                                                    <td class="text-center"><?php echo e($dp['time_frame']); ?></td>
-                                                                </tr>
-                                                            <?php endwhile; else: ?>
-                                                            <tr>
-                                                                <td colspan="3" class="text-center text-muted small py-3">No
-                                                                    developmental plan recorded.</td>
-                                                            </tr>
-                                                        <?php endif; ?>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                            <!-- Section VI: Comments -->
-                                            <h6
-                                                class="fw-bold text-uppercase border-bottom pb-2 mb-3 mt-4 text-secondary small">
-                                                <i class="fas fa-comments me-2"></i>VI. Comments & Remarks</h6>
-
-                                            <?php if ($row['staff_comments']): ?>
-                                                <div class="mb-3">
-                                                    <label class="small fw-bold text-uppercase d-block mb-1">Employee's
-                                                        Comments:</label>
-                                                    <div class="bg-light p-2 rounded small border">
-                                                        <?php echo nl2br(e($row['staff_comments'])); ?></div>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <?php if ($row['supervisor_comments']): ?>
-                                                <div class="mb-3">
-                                                    <label class="small fw-bold text-uppercase d-block mb-1">Supervisor's
-                                                        Remarks:</label>
-                                                    <div class="bg-light p-2 rounded small border border-primary">
-                                                        <?php echo nl2br(e($row['supervisor_comments'])); ?></div>
-                                                </div>
-                                            <?php endif; ?>
-
-                                            <form method="POST" action="">
-                                                <input type="hidden" name="evaluation_id"
-                                                    value="<?php echo $row['evaluation_id']; ?>">
-                                                <div class="mb-3">
-                                                    <label class="form-label"><strong>Manager Comments</strong></label>
-                                                    <textarea class="form-control" name="manager_comments" rows="3"
-                                                        placeholder="Enter your comments..."></textarea>
-                                                </div>
-                                                <div class="d-flex gap-2 justify-content-end">
-                                                    <button type="submit" name="action" value="revision"
-                                                        class="btn btn-warning">
-                                                        <i class="fas fa-undo me-1"></i>Request Revision
-                                                    </button>
-                                                    <button type="submit" name="action" value="reject" class="btn btn-danger">
-                                                        <i class="fas fa-times me-1"></i>Reject
-                                                    </button>
-                                                    <button type="submit" name="action" value="approve" class="btn btn-success">
-                                                        <i class="fas fa-check me-1"></i>Approve
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                                        </td>
+                                        <td><span class="badge bg-info text-dark rounded-pill px-3"><?php echo e($row['movement_type']); ?></span></td>
+                                        <td><span class="small text-muted"><?php echo e($row['logged_by_name']); ?></span></td>
+                                        <td><div class="fw-bold small"><?php echo formatDate($row['effective_date']); ?></div></td>
+                                        <td class="text-end">
+                                            <a href="<?php echo BASE_URL; ?>/manager/career-movement-approval.php" class="btn btn-sm btn-primary px-3 rounded-pill shadow-sm">
+                                                Review Movement
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <?php 
-// Separate loop for modals to keep table structure valid
+// Render Modals at the end of the file
 foreach ($all_pending as $row): 
+    $initials = strtoupper(substr($row['employee_name'], 0, 1) . substr(explode(' ', $row['employee_name'])[1] ?? '', 0, 1));
 ?>
-    <!-- Review Modal for <?php echo $row['evaluation_id']; ?> -->
-    <div class="modal fade" id="reviewModal<?php echo $row['evaluation_id']; ?>" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
+    <div class="modal fade modal-premium" id="reviewModal<?php echo $row['evaluation_id']; ?>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
                 <div class="modal-header">
-                    <h5 class="modal-title">Review Evaluation - <?php echo e($row['employee_name']); ?></h5>
+                    <div>
+                        <h5 class="modal-title mb-1">Performance Review</h5>
+                        <p class="mb-0 opacity-75 small">Reviewing evaluation for <?php echo e($row['employee_name']); ?></p>
+                    </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pb-0">
+                <div class="modal-body p-4 pt-0">
                     <!-- Status Stepper -->
-                    <div class="status-stepper d-flex justify-content-between mb-4 position-relative">
-                        <div class="stepper-line"></div>
+                    <div class="status-stepper d-flex justify-content-between mb-4 py-3 border-bottom overflow-hidden">
                         <?php
                         $steps = [
-                            ['label' => 'Submitted', 'active' => true, 'icon' => 'fa-paper-plane'],
-                            ['label' => 'Supervisor', 'active' => true, 'icon' => 'fa-user-tie'],
-                            ['label' => 'Manager', 'active' => true, 'icon' => 'fa-user-shield', 'current' => true],
-                            ['label' => 'Finalized', 'active' => false, 'icon' => 'fa-check-circle']
+                            ['l' => 'Drafted', 'a' => true, 'i' => 'fa-pencil-alt'],
+                            ['l' => 'Supervisor', 'a' => true, 'i' => 'fa-user-tie'],
+                            ['l' => 'Review', 'a' => true, 'i' => 'fa-user-shield', 'c' => true],
+                            ['l' => 'Final', 'a' => false, 'i' => 'fa-check-double']
                         ];
-                        
-                        foreach ($steps as $st):
-                        ?>
-                            <div class="step-item text-center <?php echo $st['active'] ? 'active' : ''; ?> <?php echo isset($st['current']) ? 'border-primary' : ''; ?>" style="z-index: 1;">
-                                <div class="step-icon mb-1 <?php echo isset($st['current']) ? 'shadow-sm border-primary' : ''; ?>">
-                                    <i class="fas <?php echo $st['icon']; ?>"></i>
+                        foreach ($steps as $st): ?>
+                            <div class="step-item text-center <?php echo $st['a'] ? 'text-primary' : 'text-muted'; ?>" style="flex: 1;">
+                                <div class="mb-1">
+                                    <i class="fas <?php echo $st['i']; ?> <?php echo isset($st['c']) ? 'fa-pulse' : ''; ?>"></i>
                                 </div>
-                                <div class="step-label x-small fw-bold <?php echo isset($st['current']) ? 'text-primary' : ''; ?>"><?php echo $st['label']; ?></div>
+                                <div style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase;"><?php echo $st['l']; ?></div>
                             </div>
                         <?php endforeach; ?>
                     </div>
+
+                    <div class="eval-summary-header">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="emp-avatar" style="width: 55px; height: 55px; font-size: 1.2rem;"><?php echo $initials; ?></div>
+                            <div>
+                                <h4 class="mb-0 fw-bold"><?php echo e($row['employee_name']); ?></h4>
+                                <div class="text-muted"><?php echo e($row['job_title']); ?> &bull; <?php echo e($row['template_name']); ?></div>
+                            </div>
+                        </div>
+                        <div class="score-circle">
+                            <div class="val"><?php echo $row['total_score']; ?>%</div>
+                            <div class="lbl">Score</div>
+                        </div>
+                    </div>
+
+                    <!-- KRA Section -->
+                    <div class="section-premium-label mb-3 mt-4">
+                        <i class="fas fa-bullseye"></i> I. Strategic Programs & Requirements
+                    </div>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover align-middle border-start">
+                            <thead class="small text-muted bg-light">
+                                <tr>
+                                    <th class="ps-3">Criterion</th>
+                                    <th class="text-center" style="width: 80px;">Weight</th>
+                                    <th class="text-center" style="width: 80px;">Rating</th>
+                                    <th class="text-center" style="width: 80px;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                <?php
+                                $kra_q = $conn->query("SELECT es.*, ec.criterion_name, ec.description, ec.weight FROM evaluation_scores es JOIN evaluation_criteria ec ON es.criterion_id = ec.criterion_id WHERE es.evaluation_id = {$row['evaluation_id']} AND ec.section = 'KRA' ORDER BY ec.sort_order");
+                                $kra_num = 1;
+                                while ($k = $kra_q->fetch_assoc()): ?>
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="fw-bold">KRA <?php echo $kra_num++; ?>: <?php echo e($k['criterion_name']); ?></div>
+                                            <?php if($k['description']): ?><div class="text-muted x-small"><?php echo e($k['description']); ?></div><?php endif; ?>
+                                        </td>
+                                        <td class="text-center"><?php echo $k['weight']; ?>%</td>
+                                        <td class="text-center fw-bold"><?php echo $k['score_value']; ?></td>
+                                        <td class="text-center text-primary fw-bold"><?php echo $k['weighted_score']; ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                                <tr class="bg-light fw-bold border-top">
+                                    <td class="ps-3">KRA Sub-total</td>
+                                    <td class="text-center">100%</td>
+                                    <td></td>
+                                    <td class="text-center text-primary"><?php echo $row['kra_subtotal']; ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Behavior Section -->
+                    <div class="section-premium-label mb-3 mt-5">
+                        <i class="fas fa-heart"></i> II. Behavior & Values
+                    </div>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover align-middle border-start">
+                            <thead class="small text-muted bg-light">
+                                <tr>
+                                    <th class="ps-3">Behavior KPI</th>
+                                    <th class="text-center" style="width: 100px;">Rating (1-4)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="small">
+                                <?php
+                                $beh_q = $conn->query("SELECT es.*, ec.criterion_name, ec.kpi_description FROM evaluation_scores es JOIN evaluation_criteria ec ON es.criterion_id = ec.criterion_id WHERE es.evaluation_id = {$row['evaluation_id']} AND ec.section = 'Behavior' ORDER BY ec.sort_order");
+                                while ($b = $beh_q->fetch_assoc()): ?>
+                                    <tr>
+                                        <td class="ps-3">
+                                            <div class="fw-bold"><?php echo e($b['criterion_name']); ?></div>
+                                            <div class="text-muted x-small"><?php echo e($b['kpi_description']); ?></div>
+                                        </td>
+                                        <td class="text-center text-primary fw-bold"><?php echo $b['score_value']; ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                                <tr class="bg-light fw-bold border-top">
+                                    <td class="ps-3">Behavior Average</td>
+                                    <td class="text-center text-primary"><?php echo $row['behavior_average']; ?></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Career Growth -->
+                    <?php if(!empty($row['desired_position'])): ?>
+                    <div class="section-premium-label mb-3 mt-5">
+                        <i class="fas fa-chart-line"></i> III. Career Growth
+                    </div>
+                    <div class="p-3 bg-light rounded-3 mb-4 border-start border-4 border-info">
+                        <div class="row align-items-center">
+                            <div class="col-sm-6">
+                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Position</small>
+                                <div class="fw-bold text-primary" style="font-size: 1.1rem;"><?php echo e($row['desired_position']); ?></div>
+                            </div>
+                            <div class="col-sm-6 text-sm-end">
+                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Date</small>
+                                <div class="fw-bold"><?php echo $row['target_date'] ? formatDate($row['target_date']) : 'N/A'; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- Remarks -->
+                    <div class="section-premium-label mb-3 mt-5">
+                        <i class="fas fa-comments"></i> IV. Remarks & Decisions
+                    </div>
+                    <?php if($row['supervisor_comments']): ?>
+                        <div class="mb-3">
+                            <label class="x-small fw-bold text-muted text-uppercase mb-1">Supervisor Remarks</label>
+                            <div class="p-3 bg-light rounded-3 border italic small"><?php echo nl2br(e($row['supervisor_comments'])); ?></div>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="">
+                        <input type="hidden" name="evaluation_id" value="<?php echo $row['evaluation_id']; ?>">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Manager's Final Comments</label>
+                            <textarea class="form-control bg-light" name="manager_comments" rows="3" placeholder="Enter findings, recommendations, or reasons for rejection..."></textarea>
+                        </div>
+                        <div class="fixed-action-bar d-flex gap-2 justify-content-end">
+                            <button type="submit" name="action" value="revision" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="fas fa-undo me-2"></i>Provision
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger rounded-pill px-4 fw-bold">
+                                <i class="fas fa-times me-2"></i>Reject
+                            </button>
+                            <button type="submit" name="action" value="approve" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                                <i class="fas fa-check-double me-2"></i>Approve Evaluation
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 <?php endforeach; ?>
 
-<style>
-    .status-stepper .stepper-line {
-        position: absolute;
-        top: 15px;
-        left: 10%;
-        right: 10%;
-        height: 2px;
-        background: #e9ecef;
-        z-index: 0;
-    }
-    .step-item .step-icon {
-        width: 32px;
-        height: 32px;
-        line-height: 32px;
-        background: #fff;
-        border: 2px solid #e9ecef;
-        border-radius: 50%;
-        margin: 0 auto;
-        color: #adb5bd;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .step-item.active .step-icon {
-        background: var(--primary-blue);
-        border-color: var(--primary-blue);
-        color: #fff;
-    }
-    .step-item.active .step-label {
-        color: var(--primary-blue);
-    }
-    .x-small { font-size: 0.65rem !important; }
-</style>
-
 <script>
-document.getElementById('customSearchPending')?.addEventListener('input', function() {
-    const filter = this.value.toLowerCase();
-    const rows = document.querySelectorAll('#pendingTable tbody tr:not(.no-results-row)');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? '' : 'none';
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality for unified center
+    document.getElementById('unifiedSearch')?.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const activePane = document.querySelector('.tab-pane.active');
+        const rows = activePane.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
     });
+
+    // Handle deep linking for review
+    const urlParams = new URLSearchParams(window.location.search);
+    const reviewId = urlParams.get('review');
+    if (reviewId) {
+        const modal = new bootstrap.Modal(document.getElementById('reviewModal' + reviewId));
+        modal.show();
+    }
 });
 </script>
 

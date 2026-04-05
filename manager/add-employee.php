@@ -616,7 +616,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
                 $ram = trim($_POST['rprop_acq_mode'][$i] ?? '');
                 $rac = !empty($_POST['rprop_acq_cost'][$i]) ? (float) $_POST['rprop_acq_cost'][$i] : null;
                 $rd = trim($rd);
-                $rpstmt->bind_param("isssdds d", $new_id, $rd, $rk, $rl, $rav, $rmv, $ram, $rac);
+                $rpstmt->bind_param("isssddsd", $new_id, $rd, $rk, $rl, $rav, $rmv, $ram, $rac);
                 $rpstmt->execute();
             }
             $rpstmt->close();
