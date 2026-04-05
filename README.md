@@ -1,1 +1,1 @@
-career movement bago pa lang ako magstart
+all set
