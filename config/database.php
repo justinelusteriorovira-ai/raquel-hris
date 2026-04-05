@@ -11,6 +11,9 @@ define('DB_NAME', 'raquel_hris');
 // Base URL for the application
 define('BASE_URL', '/raquel-hris');
 
+// Enable error reporting for mysqli
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 // Create connection using mysqli
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 

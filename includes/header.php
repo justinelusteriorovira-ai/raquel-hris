@@ -77,9 +77,6 @@ switch ($_SESSION['role']) {
                 ['icon' => 'fas fa-database', 'label' => 'System Backup', 'url' => BASE_URL . '/admin/backup.php', 'page' => 'backup.php'],
                 ['icon' => 'fas fa-cogs', 'label' => 'System Config', 'url' => BASE_URL . '/admin/config.php', 'page' => 'config.php'],
             ],
-            'NOTIFICATIONS' => [
-                ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/admin/notifications.php', 'page' => 'notifications.php'],
-            ],
         ];
         break;
 
@@ -109,9 +106,6 @@ switch ($_SESSION['role']) {
                 ['icon' => 'fas fa-chart-bar', 'label' => 'Analytics', 'url' => BASE_URL . '/manager/analytics.php', 'page' => 'analytics.php'],
                 ['icon' => 'fas fa-file-pdf', 'label' => 'Reports', 'url' => BASE_URL . '/manager/reports.php', 'page' => 'reports.php'],
             ],
-            'NOTIFICATIONS' => [
-                ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/manager/notifications.php', 'page' => 'notifications.php'],
-            ],
             'SETTINGS' => [
                 ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/manager/profile-settings.php', 'page' => 'profile-settings.php'],
             ],
@@ -136,9 +130,6 @@ switch ($_SESSION['role']) {
                 ['icon' => 'fas fa-exchange-alt', 'label' => 'Career Movements', 'url' => BASE_URL . '/supervisor/career-movements.php', 'page' => 'career-movements.php'],
                 ['icon' => 'fas fa-plus-circle', 'label' => 'Log Movement', 'url' => BASE_URL . '/supervisor/log-movement.php', 'page' => 'log-movement.php'],
             ],
-            'NOTIFICATIONS' => [
-                ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/supervisor/notifications.php', 'page' => 'notifications.php'],
-            ],
             'SETTINGS' => [
                 ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/supervisor/profile-settings.php', 'page' => 'profile-settings.php'],
             ],
@@ -161,9 +152,6 @@ switch ($_SESSION['role']) {
             'VIEWING' => [
                 ['icon' => 'fas fa-file-alt', 'label' => 'Template Viewing', 'url' => BASE_URL . '/staff/templates.php', 'page' => 'templates.php'],
                 ['icon' => 'fas fa-route', 'label' => 'Career History', 'url' => BASE_URL . '/staff/career-history.php', 'page' => 'career-history.php'],
-            ],
-            'NOTIFICATIONS' => [
-                ['icon' => 'fas fa-bell', 'label' => 'Notifications', 'url' => BASE_URL . '/staff/notifications.php', 'page' => 'notifications.php'],
             ],
             'SETTINGS' => [
                 ['icon' => 'fas fa-user-cog', 'label' => 'Profile & Settings', 'url' => BASE_URL . '/staff/profile-settings.php', 'page' => 'profile-settings.php'],
@@ -246,6 +234,23 @@ switch ($_SESSION['role']) {
         </div>
 
         <div class="nav-right">
+            <?php
+            $inbox_url = BASE_URL . '/staff/notifications.php';
+            if ($_SESSION['role'] === 'Admin')
+                $inbox_url = BASE_URL . '/admin/notifications.php';
+            elseif ($_SESSION['role'] === 'HR Manager')
+                $inbox_url = BASE_URL . '/manager/notifications.php';
+            elseif ($_SESSION['role'] === 'HR Supervisor')
+                $inbox_url = BASE_URL . '/supervisor/notifications.php';
+            ?>
+            <!-- Open Mail / Inbox -->
+            <a href="<?php echo $inbox_url; ?>" class="notification-btn" title="Open Mail / Inbox">
+                <i class="fas fa-envelope"></i>
+                <?php if ($notif_count > 0): ?>
+                    <span class="notification-badge"><?php echo $notif_count > 9 ? '9+' : $notif_count; ?></span>
+                <?php endif; ?>
+            </a>
+
             <!-- Notification Bell -->
             <div class="dropdown">
                 <button class="notification-btn" data-bs-toggle="dropdown" aria-expanded="false" id="notificationBtn">
@@ -275,15 +280,19 @@ switch ($_SESSION['role']) {
                                 <div class="notif-time"><?php echo formatDateTime($notif['created_at']); ?></div>
                             </a>
                         <?php endforeach; ?>
-                        
+
                         <?php
                         $notif_url = BASE_URL . '/staff/notifications.php';
-                        if ($_SESSION['role'] === 'Admin') $notif_url = BASE_URL . '/admin/notifications.php';
-                        elseif ($_SESSION['role'] === 'HR Manager') $notif_url = BASE_URL . '/manager/notifications.php';
-                        elseif ($_SESSION['role'] === 'HR Supervisor') $notif_url = BASE_URL . '/supervisor/notifications.php';
+                        if ($_SESSION['role'] === 'Admin')
+                            $notif_url = BASE_URL . '/admin/notifications.php';
+                        elseif ($_SESSION['role'] === 'HR Manager')
+                            $notif_url = BASE_URL . '/manager/notifications.php';
+                        elseif ($_SESSION['role'] === 'HR Supervisor')
+                            $notif_url = BASE_URL . '/supervisor/notifications.php';
                         ?>
                         <div class="dropdown-footer text-center p-2 border-top mt-1" style="background: var(--bg-gray);">
-                            <a href="<?php echo $notif_url; ?>" class="text-decoration-none" style="font-size: 0.85rem; font-weight: 600; color: var(--primary-blue);">
+                            <a href="<?php echo $notif_url; ?>" class="text-decoration-none"
+                                style="font-size: 0.85rem; font-weight: 600; color: var(--primary-blue);">
                                 View All Notifications
                             </a>
                         </div>

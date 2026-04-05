@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Employment
     $hire_date = $_POST['hire_date'] ?? '';
     $job_title = trim($_POST['job_title'] ?? '');
-    $department = trim($_POST['department'] ?? '');
+    $department_id = !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null;
     $branch_id = !empty($_POST['branch_id']) ? (int) $_POST['branch_id'] : null;
     $employment_status = $_POST['employment_status'] ?? 'Regular';
     $employment_type = $_POST['employment_type'] ?? 'Full-time';
@@ -166,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergency_contact_relationship = trim($_POST['emergency_contact_relationship'] ?? '');
     $emergency_contact_number = trim($_POST['emergency_contact_number'] ?? '');
 
-    if (empty($first_name) || empty($last_name) || empty($hire_date) || empty($job_title) || empty($department)) {
+    if (empty($first_name) || empty($last_name) || empty($hire_date) || empty($job_title) || empty($department_id)) {
         redirectWith(BASE_URL . "/manager/edit-employee.php?id=$eid", 'danger', 'Please fill in all required fields.');
     }
 
@@ -182,19 +182,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Profile picture
     $new_filename = null;
-    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../assets/img/employees/';
-        if (!is_dir($upload_dir))
-            mkdir($upload_dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $new_filename = uniqid('emp_') . '.' . $ext;
-            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
-                if (!empty($emp['profile_picture']) && file_exists($upload_dir . $emp['profile_picture'])) {
-                    unlink($upload_dir . $emp['profile_picture']);
+    $upload_error = null;
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['name'] !== '') {
+        if ($_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../assets/img/employees/';
+            if (!is_dir($upload_dir))
+                mkdir($upload_dir, 0777, true);
+            $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                $new_filename = uniqid('emp_') . '.' . $ext;
+                if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
+                    if (!empty($emp['profile_picture']) && file_exists($upload_dir . $emp['profile_picture'])) {
+                        unlink($upload_dir . $emp['profile_picture']);
+                    }
+                } else {
+                    $upload_error = "Could not save the uploaded image to the server.";
                 }
+            } else {
+                $upload_error = "Invalid image format. Only JPG, PNG, and GIF are allowed.";
             }
+        } else {
+            $upload_error = "File upload error code: " . $_FILES['profile_picture']['error'];
         }
+    }
+
+    if ($upload_error) {
+        redirectWith(BASE_URL . "/manager/edit-employee.php?id=$eid", 'danger', "Image Upload Error: " . $upload_error);
     }
 
     $conn->begin_transaction();
@@ -202,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql = "UPDATE employees SET
             first_name=?, last_name=?, middle_name=?, name_extension=?,
             date_of_birth=?, place_of_birth=?, gender=?, civil_status=?,
-            hire_date=?, job_title=?, department=?, branch_id=?, 
+            hire_date=?, job_title=?, department_id=?, branch_id=?, 
             employment_status=?, employment_type=?, is_active=?";
 
         if ($new_filename)
@@ -210,8 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sql .= " WHERE employee_id=?";
 
         $stmt = $conn->prepare($sql);
-        $types = "ssssssssssssssi" . ($new_filename ? "s" : "") . "i";
-        $params = [$first_name, $last_name, $middle_name, $name_extension, $date_of_birth, $place_of_birth, $gender, $civil_status, $hire_date, $job_title, $department, $branch_id, $employment_status, $employment_type, $is_active];
+        $types = "ssssssssssiissi" . ($new_filename ? "s" : "") . "i";
+        $params = [$first_name, $last_name, $middle_name, $name_extension, $date_of_birth, $place_of_birth, $gender, $civil_status, $hire_date, $job_title, $department_id, $branch_id, $employment_status, $employment_type, $is_active];
         if ($new_filename)
             $params[] = $new_filename;
         $params[] = $eid;
@@ -535,7 +548,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once '../includes/header.php';
 $branches = $conn->query("SELECT * FROM branches ORDER BY branch_name");
-$departments_result = $conn->query("SELECT department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
+$departments_result = $conn->query("SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
 $departments = $departments_result ? $departments_result->fetch_all(MYSQLI_ASSOC) : [];
 
 $stepLabels = [

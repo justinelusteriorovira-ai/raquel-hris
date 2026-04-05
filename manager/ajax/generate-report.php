@@ -10,7 +10,7 @@ checkRole(['HR Manager']);
 
 $report_type = $_POST['report_type'] ?? '';
 $branch_id   = intval($_POST['branch_id'] ?? 0);
-$department  = trim($_POST['department'] ?? '');
+$department_id = intval($_POST['department'] ?? 0);
 $date_from   = trim($_POST['date_from'] ?? '');
 $date_to     = trim($_POST['date_to'] ?? '');
 
@@ -33,18 +33,19 @@ try {
                 $params[] = $branch_id;
                 $types .= 'i';
             }
-            if (!empty($department)) {
-                $where .= " AND e.department = ?";
-                $params[] = $department;
-                $types .= 's';
+            if ($department_id > 0) {
+                $where .= " AND e.department_id = ?";
+                $params[] = $department_id;
+                $types .= 'i';
             }
 
             $sql = "SELECT e.employee_id, e.first_name, e.last_name, e.middle_name,
-                           e.job_title, e.department, e.hire_date, e.employment_status, e.employment_type,
+                           e.job_title, d.department_name, e.hire_date, e.employment_status, e.employment_type,
                            b.branch_name,
                            c.mobile_number, c.personal_email
                     FROM employees e
                     LEFT JOIN branches b ON e.branch_id = b.branch_id
+                    LEFT JOIN departments d ON e.department_id = d.department_id
                     LEFT JOIN employee_contacts c ON e.employee_id = c.employee_id
                     $where
                     ORDER BY e.last_name, e.first_name";
@@ -82,7 +83,7 @@ try {
                     <td>' . $i++ . '</td>
                     <td><strong>' . $fullName . '</strong></td>
                     <td>' . htmlspecialchars($row['job_title'] ?? '') . '</td>
-                    <td>' . htmlspecialchars($row['department'] ?? '') . '</td>
+                    <td>' . htmlspecialchars($row['department_name'] ?? 'N/A') . '</td>
                     <td>' . htmlspecialchars($row['branch_name'] ?? 'N/A') . '</td>
                     <td>' . ($row['hire_date'] ? date('M d, Y', strtotime($row['hire_date'])) : 'N/A') . '</td>
                     <td><span class="badge ' . $statusClass . '">' . htmlspecialchars($row['employment_status'] ?? '') . '</span></td>
@@ -108,10 +109,10 @@ try {
                 $params[] = $branch_id;
                 $types .= 'i';
             }
-            if (!empty($department)) {
-                $where .= " AND e.department = ?";
-                $params[] = $department;
-                $types .= 's';
+            if ($department_id > 0) {
+                $where .= " AND e.department_id = ?";
+                $params[] = $department_id;
+                $types .= 'i';
             }
             if (!empty($date_from)) {
                 $where .= " AND ev.approved_date >= ?";
@@ -126,7 +127,7 @@ try {
 
             $sql = "SELECT e.employee_id, 
                            CONCAT(e.last_name, ', ', e.first_name) as employee_name,
-                           e.job_title, e.department,
+                           e.job_title, d.department_name,
                            b.branch_name,
                            et.template_name,
                            ev.total_score, ev.performance_level,
@@ -135,6 +136,7 @@ try {
                     FROM evaluations ev
                     LEFT JOIN employees e ON ev.employee_id = e.employee_id
                     LEFT JOIN branches b ON e.branch_id = b.branch_id
+                    LEFT JOIN departments d ON e.department_id = d.department_id
                     LEFT JOIN evaluation_templates et ON ev.template_id = et.template_id
                     $where
                     ORDER BY ev.approved_date DESC, e.last_name";
@@ -181,7 +183,7 @@ try {
                     <td>' . $i++ . '</td>
                     <td><strong>' . htmlspecialchars($row['employee_name']) . '</strong></td>
                     <td>' . htmlspecialchars($row['job_title'] ?? '') . '</td>
-                    <td>' . htmlspecialchars($row['department'] ?? '') . '</td>
+                    <td>' . htmlspecialchars($row['department_name'] ?? 'N/A') . '</td>
                     <td>' . htmlspecialchars($row['branch_name'] ?? 'N/A') . '</td>
                     <td>' . htmlspecialchars($row['template_name'] ?? '') . '</td>
                     <td>' . $period . '</td>
@@ -208,10 +210,10 @@ try {
                 $params[] = $branch_id;
                 $types .= 'ii';
             }
-            if (!empty($department)) {
-                $where .= " AND e.department = ?";
-                $params[] = $department;
-                $types .= 's';
+            if ($department_id > 0) {
+                $where .= " AND e.department_id = ?";
+                $params[] = $department_id;
+                $types .= 'i';
             }
             if (!empty($date_from)) {
                 $where .= " AND cm.effective_date >= ?";
@@ -227,7 +229,7 @@ try {
             $sql = "SELECT cm.movement_id, cm.movement_type, cm.previous_position, cm.new_position,
                            cm.effective_date, cm.reason, cm.approval_status,
                            CONCAT(e.last_name, ', ', e.first_name) as employee_name,
-                           e.department,
+                           d.department_name,
                            pb.branch_name as prev_branch,
                            nb.branch_name as new_branch,
                            u.full_name as logged_by_name
@@ -235,6 +237,7 @@ try {
                     LEFT JOIN employees e ON cm.employee_id = e.employee_id
                     LEFT JOIN branches pb ON cm.previous_branch_id = pb.branch_id
                     LEFT JOIN branches nb ON cm.new_branch_id = nb.branch_id
+                    LEFT JOIN departments d ON e.department_id = d.department_id
                     LEFT JOIN users u ON cm.logged_by = u.user_id
                     $where
                     ORDER BY cm.effective_date DESC";

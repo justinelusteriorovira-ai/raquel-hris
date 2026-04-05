@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Evaluation Form - HRD Form-013.01</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    background: #e0e0e0;
+    padding: 20px;
+    color: #000;
+  }
+  .page {
+    background: #fff;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 30px auto;
+    padding: 15mm 15mm 15mm 15mm;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+
+  /* HEADER */
+  .form-header {
+    display: flex;
+    border: 1px solid #000;
+    margin-bottom: 6px;
+  }
+  .header-logo-cell {
+    width: 160px;
+    border-right: 1px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    background: #fff;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #5a3e1b;
+    font-style: italic;
+  }
+  .header-logo-cell span {
+    color: #7a9a3a;
+    font-size: 12px;
+    font-weight: bold;
+    font-style: normal;
+    display: block;
+    text-align: center;
+    letter-spacing: 0;
+  }
+  .header-middle {
+    flex: 1;
+    border-right: 1px solid #000;
+  }
+  .header-middle table {
+    width: 100%;
+    border-collapse: collapse;
+    height: 100%;
+  }
+  .header-middle td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #000;
+    font-size: 10px;
+  }
+  .header-middle tr:last-child td { border-bottom: none; }
+  .header-middle td:first-child { border-right: 1px solid #000; font-weight: bold; }
+  .header-right {
+    display: flex;
+    flex-direction: column;
+  }
+  .header-right table {
+    border-collapse: collapse;
+    height: 100%;
+  }
+  .header-right td {
+    padding: 3px 6px;
+    border-bottom: 1px solid #000;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .header-right tr:last-child td { border-bottom: none; }
+  .header-right td:first-child { border-right: 1px solid #000; font-weight: bold; }
+  .form-title {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    padding: 8px 10px 4px;
+    background: #fff;
+  }
+
+  /* Employee Info */
+  .employee-info {
+    border: 1px solid #000;
+    border-top: none;
+    margin-bottom: 0;
+  }
+  .employee-info table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .employee-info td {
+    padding: 4px 6px;
+    border-right: 1px solid #000;
+    border-bottom: 1px solid #000;
+    font-size: 10px;
+    vertical-align: top;
+  }
+  .employee-info tr:last-child td { border-bottom: none; }
+  .employee-info td:last-child { border-right: none; }
+  .field-label { font-weight: normal; }
+  .field-value { font-weight: bold; }
+  .underline { text-decoration: underline; }
+
+  /* Rating Scale */
+  .section-title {
+    font-weight: bold;
+    font-size: 11px;
+    border: 1px solid #000;
+    border-bottom: none;
+    padding: 3px 6px;
+    background: #fff;
+    margin-top: 6px;
+  }
+  .rating-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    margin-bottom: 0;
+  }
+  .rating-table th {
+    background: #fff;
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: left;
+  }
+  .rating-table td {
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+
+  /* Performance Evaluation Summary */
+  .summary-section { margin-top: 6px; }
+  .summary-header {
+    display: flex;
+    border: 1px solid #000;
+    border-bottom: none;
+  }
+  .summary-header-title {
+    font-weight: bold;
+    font-size: 11px;
+    padding: 3px 6px;
+    flex: 1;
+  }
+  .summary-header-cols {
+    display: flex;
+    border-left: 1px solid #000;
+  }
+  .summary-col-head {
+    font-weight: bold;
+    font-size: 10px;
+    padding: 3px 12px;
+    border-left: 1px solid #000;
+    text-align: center;
+  }
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+  }
+  .summary-table td {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .summary-table .sig-cell {
+    text-align: center;
+    font-style: italic;
+    font-size: 9px;
+    vertical-align: bottom;
+    padding-top: 16px;
+  }
+  .summary-table .bold { font-weight: bold; }
+  .summary-table .center { text-align: center; }
+
+  /* Performance Result */
+  .perf-result-title {
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    padding: 6px 0 2px;
+  }
+  .kra-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+  }
+  .kra-table th {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    background: #fff;
+    vertical-align: middle;
+  }
+  .kra-table th.left { text-align: left; }
+  .kra-table td {
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 10px;
+    height: 18px;
+  }
+  .kra-table td.label { font-weight: normal; }
+  .kra-table .subtotal-row td {
+    font-weight: bold;
+    text-align: right;
+    padding: 3px 6px;
+  }
+  .kra-table .subtotal-row td.val { text-align: center; }
+
+  /* Page 2 */
+  .kra2-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    margin-bottom: 8px;
+  }
+  .kra2-table th {
+    border: 1px solid #000;
+    padding: 4px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    background: #fff;
+    text-align: left;
+  }
+  .kra2-table td {
+    border: 1px solid #000;
+    padding: 3px 6px;
+    font-size: 10px;
+    height: 20px;
+  }
+  .kra2-section-head {
+    font-weight: bold;
+    font-size: 11px;
+    padding: 3px 6px;
+    border: 1px solid #000;
+    border-bottom: none;
+  }
+  .average-row td { font-weight: bold; }
+
+  /* Developmental Plan */
+  .dev-plan-title {
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    padding: 6px 0 2px;
+  }
+  .dev-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    margin-bottom: 8px;
+  }
+  .dev-table th {
+    border: 1px solid #000;
+    padding: 5px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    background: #fff;
+  }
+  .dev-table td {
+    border: 1px solid #000;
+    padding: 0 6px;
+    font-size: 10px;
+    height: 20px;
+  }
+
+  /* Career Growth */
+  .career-title {
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    padding: 6px 0 2px;
+  }
+  .career-box {
+    border: 1px solid #000;
+    padding: 6px 8px;
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+  .career-box .line {
+    display: inline-block;
+    border-bottom: 1px solid #000;
+    width: 200px;
+    margin-left: 4px;
+    vertical-align: bottom;
+  }
+
+  /* Comments */
+  .comment-box {
+    border: 1px solid #000;
+    margin-bottom: 6px;
+  }
+  .comment-box .label {
+    font-weight: bold;
+    font-style: italic;
+    padding: 4px 6px 2px;
+    font-size: 10px;
+  }
+  .comment-box .space { height: 55px; }
+  .comment-box .sig-line {
+    text-align: center;
+    border-top: 1px solid #000;
+    padding: 2px;
+    font-style: italic;
+    font-size: 9px;
+    margin: 0 60px;
+    margin-bottom: 4px;
+  }
+
+  /* Executives Signature */
+  .exec-box {
+    border: 1px solid #000;
+    padding: 6px 8px 8px;
+    margin-bottom: 6px;
+  }
+  .exec-box .label {
+    font-weight: bold;
+    font-style: italic;
+    font-size: 10px;
+    margin-bottom: 20px;
+  }
+  .exec-sigs {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+  }
+  .exec-sig {
+    text-align: center;
+    font-size: 9px;
+  }
+  .exec-sig .line {
+    display: block;
+    border-top: 1px solid #000;
+    width: 120px;
+    margin-bottom: 2px;
+  }
+
+  /* HR Use Only */
+  .hr-box {
+    border: 1px solid #000;
+    padding: 6px 8px;
+  }
+  .hr-box .title {
+    font-style: italic;
+    font-weight: bold;
+    text-align: center;
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+  .hr-box .fields {
+    display: flex;
+    gap: 40px;
+    font-size: 10px;
+  }
+  .hr-box .field-line {
+    display: inline-block;
+    border-bottom: 1px solid #000;
+    width: 140px;
+    margin-left: 4px;
+    vertical-align: bottom;
+  }
+  @media print {
+    body { background: none; padding: 0; }
+    .page { box-shadow: none; margin: 0; page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<div class="page">
+
+  <!-- Header -->
+  <div style="border:1px solid #000; display:flex; margin-bottom:0;">
+    <div style="width:155px; border-right:1px solid #000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 8px;">
+      <div style="font-size:22px; font-weight:900; font-style:italic; color:#5a3e1b; letter-spacing:1px; line-height:1;">RAQUEL</div>
+      <div style="font-size:8px; color:#7a9a3a; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">PAWNSHOP</div>
+    </div>
+    <div style="flex:1; border-right:1px solid #000;">
+      <div style="font-size:16px; font-weight:bold; text-align:center; padding:4px 0 2px;">PERFORMANCE EVALUATION FORM</div>
+      <table style="width:100%; border-collapse:collapse; border-top:1px solid #000;">
+        <tr>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold; width:110px;">Revision Date</td>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px;">3 January 2022</td>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Code</td>
+          <td style="border-bottom:1px solid #000; padding:2px 6px; font-size:10px;">HRD Form-013.01</td>
+        </tr>
+        <tr>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Effective Date</td>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px;">14 January 2022</td>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Control No.</td>
+          <td style="padding:2px 6px; font-size:10px;"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Employee Info -->
+  <table style="width:100%; border-collapse:collapse; border:1px solid #000; border-top:none;">
+    <tr>
+      <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:4px 6px; font-size:10px; width:50%;">
+        Name of Employee: <span style="font-weight:bold; text-decoration:underline;">Chan, Jose Mari C.</span>
+      </td>
+      <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:4px 6px; font-size:10px; width:30%;">
+        Position: <span style="font-weight:bold;">HR Staff</span>
+      </td>
+      <td style="border-bottom:1px solid #000; padding:4px 6px; font-size:10px;">
+        Date: <span style="font-style:italic;">mm/dd/yyyy</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="border-right:1px solid #000; padding:4px 6px; font-size:10px; vertical-align:top;">
+        Evaluation Period:<br>
+        From: <span style="font-weight:bold; text-decoration:underline;">01/01/2022</span>&nbsp;&nbsp;
+        To: <span style="font-weight:bold; text-decoration:underline;">12/31/2022</span><br>
+        <span style="font-size:9px;">&nbsp;&nbsp;&nbsp;&nbsp;(mm/dd/yyyy)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mm/dd/yyyy)</span>
+      </td>
+      <td style="border-right:1px solid #000; padding:4px 6px; font-size:10px; vertical-align:top;">
+        Please check one (1):<br>
+        ☐ Initial &nbsp;&nbsp;&nbsp; ☐ Final<br>
+        ☐ Quarterly &nbsp; ☑ Annual
+      </td>
+      <td style="padding:4px 6px; font-size:10px; vertical-align:top;">
+        Department/Branch:<br>
+        <span style="font-weight:bold;">HRD</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Performance Rating Scale -->
+  <div style="font-weight:bold; font-size:11px; border:1px solid #000; border-top:none; border-bottom:none; padding:3px 6px; margin-top:6px;">Performance Rating Scale</div>
+  <table class="rating-table">
+    <thead>
+      <tr>
+        <th style="width:110px;">RATING SCALE</th>
+        <th style="width:150px;">DESCRIPTION</th>
+        <th>DEFINITION</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>3.60 – 4.00</td>
+        <td>Outstanding</td>
+        <td>Performance significantly exceeds standards and expectations</td>
+      </tr>
+      <tr>
+        <td>2.60 – 3.59</td>
+        <td>Exceeds Expectations</td>
+        <td>Performance exceeds standards and expectations</td>
+      </tr>
+      <tr>
+        <td>2.00 – 2.59</td>
+        <td>Meets Expectations</td>
+        <td>Performance meets standards and expectations</td>
+      </tr>
+      <tr>
+        <td>1.00 – 1.99</td>
+        <td>Needs Improvement</td>
+        <td>Performance did not meet standards and expectations</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Performance Evaluation Summary -->
+  <div style="margin-top:6px;">
+    <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #000; padding:4px 6px; font-size:11px; font-weight:bold; text-align:left; background:#fff;">Performance Evaluation Summary</th>
+          <th style="border:1px solid #000; padding:4px 12px; font-size:10px; font-weight:bold; text-align:center; background:#fff; width:70px;">Weight</th>
+          <th style="border:1px solid #000; padding:4px 12px; font-size:10px; font-weight:bold; text-align:center; background:#fff; width:70px;">Rating</th>
+          <th style="border:1px solid #000; padding:4px 12px; font-size:10px; font-weight:bold; text-align:center; background:#fff; width:90px;">Signature</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px;">I. Key Result Areas based on Strategic Programs and<br>&nbsp;&nbsp;&nbsp;Regular Job Requirements</td>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px; text-align:center;">80%</td>
+          <td style="border:1px solid #000; padding:3px 6px;"></td>
+          <td rowspan="3" style="border:1px solid #000; padding:6px; text-align:center; font-size:9px; vertical-align:middle;">
+            <div style="border-bottom:1px solid #000; margin:0 8px 2px; height:30px;"></div>
+            <div style="font-style:italic; margin-bottom:16px;">Employee</div>
+            <div style="border-bottom:1px solid #000; margin:0 8px 2px; height:12px;"></div>
+            <div style="font-style:italic;">Rater</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px;">II. Key Result Areas based on Bahavior and Values</td>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px; text-align:center;">20%</td>
+          <td style="border:1px solid #000; padding:3px 6px;"></td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px; font-weight:bold; text-align:center;">TOTAL</td>
+          <td style="border:1px solid #000; padding:3px 6px; font-size:10px; text-align:center; font-weight:bold;">100%</td>
+          <td style="border:1px solid #000; padding:3px 6px;"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Performance Result -->
+  <div class="perf-result-title">Performance Result</div>
+  <table class="kra-table">
+    <thead>
+      <tr>
+        <th class="left" colspan="2" style="text-align:left; width:70%;">I. Key Result Areas based on Strategic Programs and Job Requirements (80%)</th>
+        <th style="width:10%;">Weight</th>
+        <th style="width:10%;">Rating</th>
+        <th style="width:10%;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="width:55px; border:1px solid #000; padding:3px 6px;">KRA 1</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 2</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 3</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 4</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 5</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 6</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 7</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 8</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 9</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 10</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 11</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 12</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 13</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 14</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 15</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 16</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 17</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 18</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 19</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; padding:3px 6px;">KRA 20</td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr>
+        <td colspan="2" style="border:1px solid #000; text-align:right; font-weight:bold; padding:3px 8px; font-size:10px;">SUB TOTAL</td>
+        <td style="border:1px solid #000; text-align:center; font-weight:bold; padding:3px 6px; font-size:10px;">0%</td>
+        <td style="border:1px solid #000;"></td>
+        <td style="border:1px solid #000; text-align:center; font-weight:bold; padding:3px 6px; font-size:10px;">-</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- PAGE 2 -->
+<div class="page">
+
+  <!-- Header (same as page 1) -->
+  <div style="border:1px solid #000; display:flex; margin-bottom:6px;">
+    <div style="width:155px; border-right:1px solid #000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 8px;">
+      <div style="font-size:22px; font-weight:900; font-style:italic; color:#5a3e1b; letter-spacing:1px; line-height:1;">RAQUEL</div>
+      <div style="font-size:8px; color:#7a9a3a; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">PAWNSHOP</div>
+    </div>
+    <div style="flex:1; border-right:1px solid #000;">
+      <div style="font-size:16px; font-weight:bold; text-align:center; padding:4px 0 2px;">PERFORMANCE EVALUATION FORM</div>
+      <table style="width:100%; border-collapse:collapse; border-top:1px solid #000;">
+        <tr>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold; width:110px;">Revision Date</td>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px;">3 January 2022</td>
+          <td style="border-right:1px solid #000; border-bottom:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Code</td>
+          <td style="border-bottom:1px solid #000; padding:2px 6px; font-size:10px;">HRD Form-013.01</td>
+        </tr>
+        <tr>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Effective Date</td>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px;">14 January 2022</td>
+          <td style="border-right:1px solid #000; padding:2px 6px; font-size:10px; font-weight:bold;">Control No.</td>
+          <td style="padding:2px 6px; font-size:10px;"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- KRA II -->
+  <div style="font-weight:bold; font-size:11px; border:1px solid #000; border-bottom:none; padding:3px 6px;">II. Key Result Areas based on Behavior and Values (20%)</div>
+  <table class="kra2-table">
+    <thead>
+      <tr>
+        <th style="width:30%;">Key Result Area</th>
+        <th>Key Performance Indicator</th>
+        <th style="width:80px; text-align:center;">Rating</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1. Positive Attitude</td>
+        <td>Displays positive attitude at work.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>2. Respect</td>
+        <td>Shows respect to all people in the organization.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>3. Accountability</td>
+        <td>Takes full responsibility of the job including special task or assignment.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>4. Commitment</td>
+        <td>Demonstrates strong commitment to the job.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>5. Teamwork</td>
+        <td>Works cooperatively with others in achieving the goals.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>6. Integrity</td>
+        <td>Exhibits honesty and strong moral uprightness.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>7. Continuous Improvement</td>
+        <td>Provides diligent effort to continuously focus on getting better.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr>
+        <td>8. Excellent Client Experience</td>
+        <td>Delivers the service beyond the expectations of the internal and external clients.</td>
+        <td style="border:1px solid #000;"></td>
+      </tr>
+      <tr class="average-row">
+        <td colspan="2" style="text-align:right; padding:3px 8px; border:1px solid #000;">Average</td>
+        <td style="border:1px solid #000; text-align:center; padding:3px 6px;">#DIV/0!</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Developmental Plan -->
+  <div class="dev-plan-title">DEVELOPMENTAL PLAN</div>
+  <table class="dev-table">
+    <thead>
+      <tr>
+        <th style="width:45%;">Areas of improvement that the employee should<br>concentrate on (if any)</th>
+        <th style="width:30%;">Support Needed</th>
+        <th style="width:25%;">Time Frame</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+      <tr><td style="border:1px solid #000; height:22px;"></td><td style="border:1px solid #000;"></td><td style="border:1px solid #000;"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- Career Growth -->
+  <div class="career-title">CAREER GROWTH</div>
+  <div class="career-box" style="margin-bottom:8px;">
+    Is the employee better suited for another job within the company? &nbsp; ☐ Yes &nbsp;&nbsp; ☐ No<br>
+    If yes, specify the job function / department: <span class="line">&nbsp;</span>
+  </div>
+
+  <!-- Employee's Comments -->
+  <div class="comment-box">
+    <div class="label">Employee's Comments:</div>
+    <div class="space"></div>
+    <div style="text-align:center; padding-bottom:4px;">
+      <div style="display:inline-block; border-top:1px solid #000; width:200px; padding-top:2px; font-style:italic; font-size:9px;">Signature over Printed Name</div>
+    </div>
+  </div>
+
+  <!-- Evaluator's Comments -->
+  <div class="comment-box">
+    <div class="label">Evaluator's Comments:</div>
+    <div class="space"></div>
+    <div style="text-align:center; padding-bottom:4px;">
+      <div style="display:inline-block; border-top:1px solid #000; width:200px; padding-top:2px; font-style:italic; font-size:9px;">Signature over Printed Name</div>
+    </div>
+  </div>
+
+  <!-- Executives' Signature -->
+  <div style="border:1px solid #000; padding:6px 8px 14px; margin-bottom:6px;">
+    <div style="font-weight:bold; font-style:italic; font-size:10px; margin-bottom:30px;">Executives' Signature</div>
+    <div style="display:flex; justify-content:space-between; padding:0 30px;">
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #000; width:140px; margin-bottom:2px;"></div>
+        <div style="font-size:9px;">Vice President</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="border-top:1px solid #000; width:140px; margin-bottom:2px;"></div>
+        <div style="font-size:9px;">President and CEO</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HR Use Only -->
+  <div style="border:1px solid #000; padding:6px 8px;">
+    <div style="font-style:italic; font-weight:bold; text-align:center; font-size:10px; margin-bottom:6px;">For Human Resources Use Only</div>
+    <div style="font-size:10px;">
+      PMS Form received on: <span style="display:inline-block; border-bottom:1px solid #000; width:120px; margin:0 4px;"></span>
+      &nbsp;&nbsp;&nbsp; Received by: <span style="display:inline-block; border-bottom:1px solid #000; width:160px; margin:0 4px;"></span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

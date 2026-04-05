@@ -809,16 +809,16 @@ $totalSteps = 12;
         <div class="col-md-4 mb-3">
             <label class="form-label">Department <span class="text-danger">*</span></label>
             <?php if (!empty($departments) && is_array($departments)): ?>
-                <select class="form-select" name="department" required>
+                <select class="form-select" name="department_id" required>
                     <option value="">-- Select Department --</option>
                     <?php foreach ($departments as $dept): ?>
-                        <option value="<?php echo e($dept['department_name']); ?>" <?php echo (($e['department'] ?? '') === $dept['department_name']) ? 'selected' : ''; ?>>
+                        <option value="<?php echo $dept['department_id']; ?>" <?php echo (($e['department_id'] ?? '') == $dept['department_id']) ? 'selected' : ''; ?>>
                             <?php echo e($dept['department_name']); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             <?php else: ?>
-                <input type="text" class="form-control" name="department" value="<?php echo $v('department'); ?>" required>
+                <input type="text" class="form-control" name="department_id" value="<?php echo $v('department_id'); ?>" required>
                 <small class="text-muted">No departments defined yet. <a
                         href="<?php echo BASE_URL; ?>/manager/departments.php" target="_blank">Add departments</a></small>
             <?php endif; ?>

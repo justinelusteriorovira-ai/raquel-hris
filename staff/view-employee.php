@@ -8,12 +8,13 @@ $eid = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($eid <= 0) redirectWith(BASE_URL . '/staff/search-employees.php', 'danger', 'Invalid employee ID.');
 
 // Fetch employee details (no branch restriction for staff — read-only access to all)
-$stmt = $conn->prepare("SELECT e.*, b.branch_name,
+$stmt = $conn->prepare("SELECT e.*, b.branch_name, d.department_name,
     ed.height_m, ed.weight_kg, ed.blood_type, ed.citizenship,
     eg.sss_number, eg.philhealth_number, eg.pagibig_number, eg.tin_number,
     ec.telephone_number, ec.mobile_number, ec.personal_email
     FROM employees e 
     LEFT JOIN branches b ON e.branch_id = b.branch_id 
+    LEFT JOIN departments d ON e.department_id = d.department_id
     LEFT JOIN employee_details ed ON e.employee_id = ed.employee_id
     LEFT JOIN employee_government_ids eg ON e.employee_id = eg.employee_id
     LEFT JOIN employee_contacts ec ON e.employee_id = ec.employee_id
@@ -85,7 +86,7 @@ function field($label, $value) {
                     <p class="mb-1"><i class="fas fa-envelope text-muted me-2" style="width:16px;"></i><?php echo e($emp['personal_email'] ?: 'N/A'); ?></p>
                     <p class="mb-1"><i class="fas fa-phone text-muted me-2" style="width:16px;"></i><?php echo e($emp['mobile_number'] ?: 'N/A'); ?></p>
                     <p class="mb-1"><i class="fas fa-building text-muted me-2" style="width:16px;"></i><?php echo e($emp['branch_name'] ?: 'N/A'); ?></p>
-                    <p class="mb-0"><i class="fas fa-sitemap text-muted me-2" style="width:16px;"></i><?php echo e($emp['department'] ?: 'N/A'); ?></p>
+                    <p class="mb-0"><i class="fas fa-sitemap text-muted me-2" style="width:16px;"></i><?php echo e($emp['department_name'] ?: 'N/A'); ?></p>
                 </div>
             </div>
         </div>
@@ -136,7 +137,7 @@ function field($label, $value) {
                         <?php
                         echo field('Employee ID', $emp['employee_id']);
                         echo field('Job Title', $emp['job_title']);
-                        echo field('Department', $emp['department']);
+                        echo field('Department', $emp['department_name']);
                         echo field('Branch', $emp['branch_name']);
                         echo field('Employment Status', $emp['employment_status']);
                         echo field('Employment Type', $emp['employment_type']);

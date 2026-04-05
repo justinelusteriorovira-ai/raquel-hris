@@ -90,14 +90,21 @@ function formatDateTime($datetime, $format = 'M d, Y h:i A')
 function getPerformanceBadgeClass($level)
 {
     switch ($level) {
+        case 'Outstanding':
+            return 'bg-success';
+        case 'Exceeds Expectations':
+            return 'bg-info';
+        case 'Meets Expectations':
+            return 'bg-warning text-dark';
+        case 'Needs Improvement':
+            return 'bg-danger';
+        // Legacy support
         case 'Excellent':
             return 'bg-success';
         case 'Above Average':
             return 'bg-info';
         case 'Average':
             return 'bg-warning text-dark';
-        case 'Needs Improvement':
-            return 'bg-danger';
         default:
             return 'bg-secondary';
     }
@@ -131,13 +138,23 @@ function getStatusBadgeClass($status)
  */
 function getPerformanceLevel($score)
 {
-    if ($score >= 90)
-        return 'Excellent';
-    if ($score >= 80)
-        return 'Above Average';
-    if ($score >= 70)
-        return 'Average';
+    // HRD Form-013.01 rating scale (1.00-4.00)
+    if ($score >= 3.60)
+        return 'Outstanding';
+    if ($score >= 2.60)
+        return 'Exceeds Expectations';
+    if ($score >= 2.00)
+        return 'Meets Expectations';
     return 'Needs Improvement';
+}
+
+/**
+ * Calculate evaluation total from KRA subtotal and behavior average
+ * using the template's weight split (default 80/20)
+ */
+function calculateEvalTotal($kra_subtotal, $behavior_average, $kra_weight = 80, $behavior_weight = 20)
+{
+    return round(($kra_subtotal * $kra_weight / 100) + ($behavior_average * $behavior_weight / 100), 2);
 }
 
 /**
@@ -213,5 +230,60 @@ function updateSetting($conn, $key, $value)
     $success = $stmt->execute();
     $stmt->close();
     return $success;
+}
+/**
+ * Check if the login attempt should be blocked due to brute force
+ */
+function checkLoginBruteForce($conn, $email, $ip)
+{
+    $lockout_time = 15; // minutes
+    $max_email_attempts = 5;
+    $max_ip_attempts = 10;
+
+    // Check by Email
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM login_attempts WHERE email = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    $stmt->bind_param("si", $email, $lockout_time);
+    $stmt->execute();
+    $email_count = $stmt->get_result()->fetch_assoc()['count'];
+    $stmt->close();
+
+    if ($email_count >= $max_email_attempts) {
+        return true;
+    }
+
+    // Check by IP
+    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM login_attempts WHERE ip_address = ? AND attempt_time > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    $stmt->bind_param("si", $ip, $lockout_time);
+    $stmt->execute();
+    $ip_count = $stmt->get_result()->fetch_assoc()['count'];
+    $stmt->close();
+
+    if ($ip_count >= $max_ip_attempts) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Register a failed login attempt
+ */
+function registerLoginAttempt($conn, $email, $ip)
+{
+    $stmt = $conn->prepare("INSERT INTO login_attempts (email, ip_address) VALUES (?, ?)");
+    $stmt->bind_param("ss", $email, $ip);
+    $stmt->execute();
+    $stmt->close();
+}
+
+/**
+ * Clear login attempts for a successful login
+ */
+function clearLoginAttempts($conn, $email, $ip)
+{
+    $stmt = $conn->prepare("DELETE FROM login_attempts WHERE email = ? OR ip_address = ?");
+    $stmt->bind_param("ss", $email, $ip);
+    $stmt->execute();
+    $stmt->close();
 }
 ?>

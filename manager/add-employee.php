@@ -20,12 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
     $skipped = 0;
 
     while (($row = fgetcsv($file)) !== false) {
-        if (count($row) < 74) {
+        // Minimum required columns (basic info)
+        if (count($row) < 10) {
             $skipped++;
             continue;
         }
 
-        $v = array_map('trim', $row);
+        $v = array_pad(array_map('trim', $row), 74, '');
 
         // Basic mapping for CSV
         $first_name = $v[0];
@@ -72,6 +73,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
             continue;
         }
 
+        // Department lookup/creation
+        $did = null;
+        if (!empty($v[67])) {
+            $dc = $conn->prepare("SELECT department_id FROM departments WHERE department_name = ?");
+            $dc->bind_param("s", $v[67]);
+            $dc->execute();
+            $dr = $dc->get_result();
+            if ($d = $dr->fetch_assoc()) {
+                $did = $d['department_id'];
+            } else {
+                $di = $conn->prepare("INSERT INTO departments (department_name, description) VALUES (?, 'Imported via CSV')");
+                $di->bind_param("s", $v[67]);
+                $di->execute();
+                $did = $di->insert_id;
+                $di->close();
+            }
+            $dc->close();
+        }
+
         // Branch
         $bid = null;
         if (!empty($v[68])) {
@@ -93,8 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
 
         $conn->begin_transaction();
         try {
-            $stmt = $conn->prepare("INSERT INTO employees (first_name, last_name, middle_name, name_extension, date_of_birth, place_of_birth, gender, civil_status, hire_date, job_title, department, branch_id, employment_status, employment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param("ssssssssssssss", $first_name, $last_name, $middle_name, $name_extension, $dob, $pob, $gender, $civil_status, $hd, $job_title, $dept, $bid, $emp_status, $emp_type);
+            $stmt = $conn->prepare("INSERT INTO employees (first_name, last_name, middle_name, name_extension, date_of_birth, place_of_birth, gender, civil_status, hire_date, job_title, department_id, branch_id, employment_status, employment_type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param("ssssssssssiiss", $first_name, $last_name, $middle_name, $name_extension, $dob, $pob, $gender, $civil_status, $hd, $job_title, $did, $bid, $emp_status, $emp_type);
             $stmt->execute();
             $eid = $stmt->insert_id;
             $stmt->close();
@@ -138,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_csv'])) {
             $success++;
         } catch (Exception $e) {
             $conn->rollback();
+            // error_log("CSV Import error: " . $e->getMessage());
             $skipped++;
         }
     }
@@ -236,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
     // === SECTION 12: Employment ===
     $hire_date = $_POST['hire_date'] ?? '';
     $job_title = trim($_POST['job_title'] ?? '');
-    $department = trim($_POST['department'] ?? '');
+    $department_id = !empty($_POST['department_id']) ? (int) $_POST['department_id'] : null;
     $branch_id = !empty($_POST['branch_id']) ? (int) $_POST['branch_id'] : null;
     $employment_status = $_POST['employment_status'] ?? 'Regular';
     $employment_type = $_POST['employment_type'] ?? 'Full-time';
@@ -246,21 +267,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
 
     // Profile picture
     $profile_picture = null;
-    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../assets/img/employees/';
-        if (!is_dir($upload_dir))
-            mkdir($upload_dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $new_filename = uniqid('emp_') . '.' . $ext;
-            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
-                $profile_picture = $new_filename;
+    $upload_error = null;
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['name'] !== '') {
+        if ($_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../assets/img/employees/';
+            if (!is_dir($upload_dir))
+                mkdir($upload_dir, 0777, true);
+            $ext = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif'])) {
+                $new_filename = uniqid('emp_') . '.' . $ext;
+                if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_dir . $new_filename)) {
+                    $profile_picture = $new_filename;
+                } else {
+                    $upload_error = "Could not save the uploaded image to the server.";
+                }
+            } else {
+                $upload_error = "Invalid image format. Only JPG, PNG, and GIF are allowed.";
             }
+        } else {
+            $upload_error = "File upload error code: " . $_FILES['profile_picture']['error'];
         }
     }
 
+    if ($upload_error) {
+        redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', "Image Upload Error: " . $upload_error);
+    }
+
     // Validate required
-    if (empty($first_name) || empty($last_name) || empty($hire_date) || empty($job_title) || empty($department)) {
+    if (empty($first_name) || empty($last_name) || empty($hire_date) || empty($job_title) || empty($department_id)) {
         redirectWith(BASE_URL . '/manager/add-employee.php', 'danger', 'Please fill in all required fields (Name, Hire Date, Job Title, Department).');
     }
 
@@ -283,13 +317,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
         $sql = "INSERT INTO employees (
             first_name, last_name, middle_name, name_extension,
             date_of_birth, place_of_birth, gender, civil_status,
-            hire_date, job_title, department, branch_id, 
+            hire_date, job_title, department_id, branch_id, 
             employment_status, employment_type, profile_picture
         ) VALUES (?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?)";
 
         $stmt = $conn->prepare($sql);
         $stmt->bind_param(
-            "sssssssssssssss",
+            "ssssssssssiisss",
             $first_name,
             $last_name,
             $middle_name,
@@ -300,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
             $civil_status,
             $hire_date,
             $job_title,
-            $department,
+            $department_id,
             $branch_id,
             $employment_status,
             $employment_type,
@@ -644,7 +678,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
 
 require_once '../includes/header.php';
 $branches = $conn->query("SELECT * FROM branches ORDER BY branch_name");
-$departments_result = $conn->query("SELECT department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
+$departments_result = $conn->query("SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
 $departments = $departments_result ? $departments_result->fetch_all(MYSQLI_ASSOC) : [];
 
 $stepLabels = [

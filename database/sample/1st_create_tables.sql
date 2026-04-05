@@ -23,7 +23,22 @@ CREATE TABLE branches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
--- 3. Users (System accounts)
+-- 3. Departments
+-- ============================================
+DROP TABLE IF EXISTS departments;
+CREATE TABLE departments (
+    department_id INT AUTO_INCREMENT PRIMARY KEY,
+    department_name VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_department_status (is_active, deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- 4. Users (System accounts)
 -- ============================================
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
@@ -45,7 +60,7 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
--- 4. Employees (Core Identity & Employment)
+-- 5. Employees (Core Identity & Employment)
 -- ============================================
 DROP TABLE IF EXISTS employees;
 CREATE TABLE employees (
@@ -64,7 +79,7 @@ CREATE TABLE employees (
     -- Employment Metadata
     hire_date DATE NOT NULL,
     job_title VARCHAR(150) NOT NULL,
-    department VARCHAR(100) NOT NULL,
+    department_id INT NULL,
     branch_id INT NULL,
     employment_status ENUM('Regular', 'Probationary', 'Contractual', 'Resigned', 'Terminated') DEFAULT 'Regular',
     employment_type ENUM('Full-time', 'Part-time') DEFAULT 'Full-time',
@@ -75,9 +90,10 @@ CREATE TABLE employees (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     
+    CONSTRAINT fk_employees_department FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL,
     CONSTRAINT fk_employees_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE SET NULL,
     INDEX idx_employee_names (last_name, first_name),
-    INDEX idx_employee_dept (department, branch_id),
+    INDEX idx_employee_dept (department_id, branch_id),
     INDEX idx_employee_employment_status (employment_status, is_active, deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -290,6 +306,12 @@ CREATE TABLE evaluation_templates (
     template_name VARCHAR(150) NOT NULL,
     description TEXT NULL,
     target_position VARCHAR(100) NULL,
+    evaluation_type ENUM('Initial','Final','Quarterly','Annual') DEFAULT 'Annual',
+    kra_weight DECIMAL(5,2) DEFAULT 80.00,
+    behavior_weight DECIMAL(5,2) DEFAULT 20.00,
+    form_code VARCHAR(50) DEFAULT 'HRD Form-013.01',
+    revision_date DATE NULL,
+    effective_date_form DATE NULL,
     status ENUM('Draft', 'Active', 'Archived') DEFAULT 'Draft',
     created_by INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -306,10 +328,12 @@ DROP TABLE IF EXISTS evaluation_criteria;
 CREATE TABLE evaluation_criteria (
     criterion_id INT AUTO_INCREMENT PRIMARY KEY,
     template_id INT NOT NULL,
+    section ENUM('KRA','Behavior') DEFAULT 'KRA',
     criterion_name VARCHAR(150) NOT NULL,
     description TEXT NULL,
+    kpi_description TEXT NULL,
     weight DECIMAL(5,2) NOT NULL,
-    scoring_method ENUM('Scale_1_5', 'Scale_1_10', 'Percentage') DEFAULT 'Scale_1_5',
+    scoring_method ENUM('Scale_1_5', 'Scale_1_10', 'Percentage', 'Scale_1_4') DEFAULT 'Scale_1_4',
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -324,6 +348,7 @@ CREATE TABLE evaluations (
     evaluation_id INT AUTO_INCREMENT PRIMARY KEY,
     employee_id INT NOT NULL,
     template_id INT NOT NULL,
+    evaluation_type ENUM('Initial','Final','Quarterly','Annual') DEFAULT 'Annual',
     evaluation_period_start DATE NULL,
     evaluation_period_end DATE NULL,
     submitted_by INT NULL,
@@ -331,6 +356,8 @@ CREATE TABLE evaluations (
     approved_by INT NULL,
     status ENUM('Draft', 'Pending Supervisor', 'Pending Manager', 'Approved', 'Rejected', 'Returned') DEFAULT 'Draft',
     total_score DECIMAL(5,2) NULL,
+    kra_subtotal DECIMAL(5,2) NULL,
+    behavior_average DECIMAL(5,2) NULL,
     performance_level VARCHAR(50) NULL,
     submitted_date DATETIME NULL,
     endorsed_date DATETIME NULL,
@@ -338,6 +365,15 @@ CREATE TABLE evaluations (
     staff_comments TEXT NULL,
     supervisor_comments TEXT NULL,
     manager_comments TEXT NULL,
+    evaluator_comments TEXT NULL,
+    current_position VARCHAR(150) NULL,
+    months_in_position INT NULL,
+    desired_position VARCHAR(150) NULL,
+    target_date DATE NULL,
+    career_growth_suited TINYINT(1) DEFAULT 0,
+    career_growth_details TEXT NULL,
+    hr_received_date DATE NULL,
+    hr_received_by INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
@@ -363,6 +399,21 @@ CREATE TABLE evaluation_scores (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_score_eval FOREIGN KEY (evaluation_id) REFERENCES evaluations(evaluation_id) ON DELETE CASCADE,
     CONSTRAINT fk_score_criteria FOREIGN KEY (criterion_id) REFERENCES evaluation_criteria(criterion_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- 19. Evaluation Dev Plans
+-- ============================================
+DROP TABLE IF EXISTS evaluation_dev_plans;
+CREATE TABLE evaluation_dev_plans (
+    plan_id INT AUTO_INCREMENT PRIMARY KEY,
+    evaluation_id INT NOT NULL,
+    improvement_area TEXT NULL,
+    support_needed TEXT NULL,
+    time_frame VARCHAR(100) NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_devplan_eval FOREIGN KEY (evaluation_id) REFERENCES evaluations(evaluation_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -422,7 +473,17 @@ CREATE TABLE audit_logs (
     CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 22. Additional PDS Tables (to keep employees table lean)
+-- ============================================
+-- 22. System Settings
+-- ============================================
+DROP TABLE IF EXISTS system_settings;
+CREATE TABLE system_settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 23. Additional PDS Tables (to keep employees table lean)
 -- Note: Remaining Sections 5, 7, 8, 9 from previous schema are kept as separate tables below
 
 DROP TABLE IF EXISTS employee_trainings;

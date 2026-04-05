@@ -10,13 +10,14 @@ if ($eid <= 0) redirectWith(BASE_URL . '/supervisor/employees.php', 'danger', 'I
 $branch_id = $_SESSION['branch_id'];
 
 // Fetch employee details and ensure they belong to the supervisor's branch
-$stmt = $conn->prepare("SELECT e.*, b.branch_name,
+$stmt = $conn->prepare("SELECT e.*, b.branch_name, d.department_name,
     ed.height_m, ed.weight_kg, ed.blood_type, ed.citizenship,
     eg.sss_number, eg.philhealth_number, eg.pagibig_number, eg.tin_number,
     ec.telephone_number, ec.mobile_number, ec.personal_email,
     edi.*
     FROM employees e 
     LEFT JOIN branches b ON e.branch_id = b.branch_id 
+    LEFT JOIN departments d ON e.department_id = d.department_id
     LEFT JOIN employee_details ed ON e.employee_id = ed.employee_id
     LEFT JOIN employee_government_ids eg ON e.employee_id = eg.employee_id
     LEFT JOIN employee_contacts ec ON e.employee_id = ec.employee_id

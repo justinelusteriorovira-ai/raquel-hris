@@ -28,11 +28,15 @@ $error = '';
 // Handle login form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'config/database.php';
+    require_once 'includes/functions.php';
 
     $email = filter_var(trim($_POST['email'] ?? ''), FILTER_VALIDATE_EMAIL);
     $password = $_POST['password'] ?? '';
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-    if (!$email) {
+    if (checkLoginBruteForce($conn, $email, $ip)) {
+        $error = 'Too many failed login attempts. Please try again in 15 minutes.';
+    } elseif (!$email) {
         $error = 'Please enter a valid email address.';
     } elseif (empty($password)) {
         $error = 'Please enter your password.';
@@ -58,12 +62,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['branch_id'] = $user['branch_id'];
 
+                // Clear brute force attempts on successful login
+                clearLoginAttempts($conn, $email, $ip);
+
                 // Log the login
                 $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
                 $logStmt = $conn->prepare("INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, details, ip_address) VALUES (?, 'LOGIN', 'User', ?, 'User logged in successfully.', ?)");
                 $logStmt->bind_param("iis", $user['user_id'], $user['user_id'], $ip);
                 $logStmt->execute();
                 $logStmt->close();
+                
+                // Notify Admins of successful login
+                $adminStmt = $conn->prepare("SELECT user_id FROM users WHERE role = 'Admin' AND is_active = 1");
+                $adminStmt->execute();
+                $admins = $adminStmt->get_result();
+                while ($admin = $admins->fetch_assoc()) {
+                    createNotification($conn, $admin['user_id'], 'Successful Login', $user['full_name'] . ' (' . $user['role'] . ') has logged in successfully from IP ' . $ip);
+                }
+                $adminStmt->close();
 
                 // Redirect based on role
                 switch ($user['role']) {
@@ -83,9 +99,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             } else {
                 $error = 'Invalid email or password.';
+                
+                // Register failed attempt
+                registerLoginAttempt($conn, $email, $ip);
+                
+                // Notify Admins of failed login (wrong password)
+                $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+                $adminStmt = $conn->prepare("SELECT user_id FROM users WHERE role = 'Admin' AND is_active = 1");
+                $adminStmt->execute();
+                $admins = $adminStmt->get_result();
+                while ($admin = $admins->fetch_assoc()) {
+                    createNotification($conn, $admin['user_id'], 'Security Alert: Failed Login', 'Failed login attempt for ' . $user['email'] . ' (' . $user['role'] . '). Incorrect password entry. IP: ' . $ip);
+                }
+                $adminStmt->close();
             }
         } else {
             $error = 'Invalid email or password.';
+            
+            // Register failed attempt
+            registerLoginAttempt($conn, $email, $ip);
+            
+            // Notify Admins of failed login (invalid account)
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $adminStmt = $conn->prepare("SELECT user_id FROM users WHERE role = 'Admin' AND is_active = 1");
+            $adminStmt->execute();
+            $admins = $adminStmt->get_result();
+            $failed_email = filter_var($_POST['email'] ?? 'Unknown', FILTER_SANITIZE_EMAIL);
+            while ($admin = $admins->fetch_assoc()) {
+                createNotification($conn, $admin['user_id'], 'Security Alert: Failed Login', 'Failed login attempt for ' . $failed_email . ' (Unknown Account). IP: ' . $ip);
+            }
+            $adminStmt->close();
         }
         $stmt->close();
     }

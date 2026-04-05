@@ -1368,9 +1368,20 @@ a {
     flex-shrink: 0;
 }
 
-.notif-stat-card .nsc-icon.total { background: rgba(41, 67, 6, 0.1); color: #294306; }
-.notif-stat-card .nsc-icon.unread { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
-.notif-stat-card .nsc-icon.read { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+.notif-stat-card .nsc-icon.total {
+    background: rgba(41, 67, 6, 0.1);
+    color: #294306;
+}
+
+.notif-stat-card .nsc-icon.unread {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.notif-stat-card .nsc-icon.read {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
 
 .notif-stat-card .nsc-info h4 {
     margin: 0;
@@ -1512,8 +1523,15 @@ a {
 }
 
 @keyframes notifSlideIn {
-    from { opacity: 0; transform: translateX(-12px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .notif-card:first-child {
@@ -1553,12 +1571,35 @@ a {
     flex-shrink: 0;
 }
 
-.notif-card .notif-card-icon.eval    { background: rgba(23, 162, 184, 0.12); color: #17a2b8; }
-.notif-card .notif-card-icon.approve { background: rgba(40, 167, 69, 0.12); color: #28a745; }
-.notif-card .notif-card-icon.reject  { background: rgba(220, 53, 69, 0.12); color: #dc3545; }
-.notif-card .notif-card-icon.return  { background: rgba(111, 66, 193, 0.12); color: #6f42c1; }
-.notif-card .notif-card-icon.career  { background: rgba(189, 148, 20, 0.12); color: #BD9414; }
-.notif-card .notif-card-icon.system  { background: rgba(41, 67, 6, 0.1); color: #294306; }
+.notif-card .notif-card-icon.eval {
+    background: rgba(23, 162, 184, 0.12);
+    color: #17a2b8;
+}
+
+.notif-card .notif-card-icon.approve {
+    background: rgba(40, 167, 69, 0.12);
+    color: #28a745;
+}
+
+.notif-card .notif-card-icon.reject {
+    background: rgba(220, 53, 69, 0.12);
+    color: #dc3545;
+}
+
+.notif-card .notif-card-icon.return {
+    background: rgba(111, 66, 193, 0.12);
+    color: #6f42c1;
+}
+
+.notif-card .notif-card-icon.career {
+    background: rgba(189, 148, 20, 0.12);
+    color: #BD9414;
+}
+
+.notif-card .notif-card-icon.system {
+    background: rgba(41, 67, 6, 0.1);
+    color: #294306;
+}
 
 .notif-card .notif-card-body {
     flex: 1;
@@ -1637,8 +1678,17 @@ a {
 }
 
 @keyframes dotPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
 }
 
 /* Fade-out animation for deleted cards */
@@ -1663,8 +1713,13 @@ a {
 }
 
 @keyframes notifMarkRead {
-    0% { background: rgba(40, 167, 69, 0.1); }
-    100% { background: var(--bg-white); }
+    0% {
+        background: rgba(40, 167, 69, 0.1);
+    }
+
+    100% {
+        background: var(--bg-white);
+    }
 }
 
 /* Pagination */
@@ -1757,17 +1812,21 @@ a {
     .notif-stats-row {
         gap: 10px;
     }
+
     .notif-stat-card {
         min-width: 120px;
         padding: 12px 14px;
     }
+
     .notif-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
+
     .notif-card .notif-card-actions {
         opacity: 1;
     }
+
     .notif-center-header {
         flex-wrap: wrap;
     }
@@ -1779,6 +1838,7 @@ a {
         opacity: 0;
         transform: translateY(12px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

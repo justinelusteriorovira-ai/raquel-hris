@@ -14,12 +14,12 @@ function createPerformancePieChart(canvasId, data) {
     return new Chart(ctx, {
         type: 'pie',
         data: {
-            labels: ['Excellent', 'Above Average', 'Average', 'Needs Improvement'],
+            labels: ['Outstanding', 'Exceeds Expectations', 'Meets Expectations', 'Needs Improvement'],
             datasets: [{
                 data: [
-                    data['Excellent'] || 0,
-                    data['Above Average'] || 0,
-                    data['Average'] || 0,
+                    data['Outstanding'] || 0,
+                    data['Exceeds Expectations'] || 0,
+                    data['Meets Expectations'] || 0,
                     data['Needs Improvement'] || 0
                 ],
                 backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],

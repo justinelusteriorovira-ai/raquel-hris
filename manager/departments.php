@@ -63,9 +63,9 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     }
     $dname = $dept['department_name'];
 
-    // Check if employees are assigned (using the string name mapping)
-    $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM employees WHERE department = ?");
-    $stmt->bind_param("s", $dname);
+    // Check if employees are assigned (using foreign key)
+    $stmt = $conn->prepare("SELECT COUNT(*) as cnt FROM employees WHERE department_id = ?");
+    $stmt->bind_param("i", $did);
     $stmt->execute();
     $emp_check = $stmt->get_result()->fetch_assoc()['cnt'];
     $stmt->close();
@@ -85,7 +85,7 @@ require_once '../includes/header.php';
 // Fetch departments with counts
 $departments = $conn->query("
     SELECT d.*,
-           (SELECT COUNT(*) FROM employees WHERE department = d.department_name) as employee_count
+           (SELECT COUNT(*) FROM employees WHERE department_id = d.department_id) as employee_count
     FROM departments d
     ORDER BY d.department_name
 ");

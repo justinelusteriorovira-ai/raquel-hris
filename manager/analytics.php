@@ -31,13 +31,13 @@ if (!empty($filter_branch)) {
     $types .= 'i';
 }
 if (!empty($filter_dept)) {
-    $where .= " AND e.department = ?";
-    $params[] = $filter_dept;
-    $types .= 's';
+    $where .= " AND e.department_id = ?";
+    $params[] = (int) $filter_dept;
+    $types .= 'i';
 }
 
 // Performance Distribution
-$perf_dist = ['Excellent' => 0, 'Above Average' => 0, 'Average' => 0, 'Needs Improvement' => 0];
+$perf_dist = ['Outstanding' => 0, 'Exceeds Expectations' => 0, 'Meets Expectations' => 0, 'Needs Improvement' => 0];
 $perf_q = $conn->prepare("SELECT ev.performance_level, COUNT(*) as count FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id $where AND ev.performance_level IS NOT NULL GROUP BY ev.performance_level");
 if (!empty($params))
     $perf_q->bind_param($types, ...$params);
@@ -87,7 +87,7 @@ $top_performers = $top_q->get_result();
 
 // Get branches and departments for filters
 $branches = $conn->query("SELECT * FROM branches ORDER BY branch_name");
-$departments = $conn->query("SELECT DISTINCT department FROM employees ORDER BY department");
+$departments = $conn->query("SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
 ?>
 
 <!-- Filters -->
@@ -116,7 +116,7 @@ $departments = $conn->query("SELECT DISTINCT department FROM employees ORDER BY 
                 <select class="form-select" name="department">
                     <option value="">All Departments</option>
                     <?php while ($d = $departments->fetch_assoc()): ?>
-                        <option value="<?php echo e($d['department']); ?>" <?php echo ($filter_dept == $d['department']) ? 'selected' : ''; ?>><?php echo e($d['department']); ?></option>
+                        <option value="<?php echo $d['department_id']; ?>" <?php echo ($filter_dept == $d['department_id']) ? 'selected' : ''; ?>><?php echo e($d['department_name']); ?></option>
                     <?php endwhile; ?>
                 </select>
             </div>
@@ -224,7 +224,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
         new Chart(document.getElementById('perfPieChart'), {
             type: 'pie',
             data: {
-                labels: ['Excellent', 'Above Average', 'Average', 'Needs Improvement'],
+                labels: ['Outstanding', 'Exceeds Expectations', 'Meets Expectations', 'Needs Improvement'],
                 datasets: [{
                     data: [<?php echo implode(',', array_values($perf_dist)); ?>],
                     backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],

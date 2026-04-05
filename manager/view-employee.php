@@ -8,7 +8,7 @@ $eid = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($eid <= 0)
     redirectWith(BASE_URL . '/manager/employees.php', 'danger', 'Invalid employee ID.');
 
-$stmt = $conn->prepare("SELECT e.*, b.branch_name,
+$stmt = $conn->prepare("SELECT e.*, b.branch_name, d.department_name,
     ed.height_m, ed.weight_kg, ed.blood_type, ed.citizenship,
     eg.sss_number, eg.philhealth_number, eg.pagibig_number, eg.tin_number,
     ec.telephone_number, ec.mobile_number, ec.personal_email,
@@ -19,6 +19,7 @@ $stmt = $conn->prepare("SELECT e.*, b.branch_name,
     edi.has_current_treatment, edi.treatment_details
     FROM employees e 
     LEFT JOIN branches b ON e.branch_id = b.branch_id 
+    LEFT JOIN departments d ON e.department_id = d.department_id
     LEFT JOIN employee_details ed ON e.employee_id = ed.employee_id
     LEFT JOIN employee_government_ids eg ON e.employee_id = eg.employee_id
     LEFT JOIN employee_contacts ec ON e.employee_id = ec.employee_id
@@ -107,6 +108,14 @@ $career_movements = $conn->query("
     WHERE cm.employee_id = $eid
     ORDER BY cm.effective_date DESC
 ")->fetch_all(MYSQLI_ASSOC);
+
+// Load Latest Career Goals from Evaluations
+$career_goals = $conn->query("
+    SELECT current_position, months_in_position, desired_position, target_date, career_growth_details, approved_date
+    FROM evaluations
+    WHERE employee_id = $eid AND status = 'Approved'
+    ORDER BY approved_date DESC LIMIT 1
+")->fetch_assoc();
 
 require_once '../includes/header.php';
 
@@ -282,7 +291,8 @@ function yn($v)
                                         <tr>
                                             <td><?php echo e(trim($ch['first_name'] . ' ' . $ch['middle_name'] . ' ' . $ch['surname'])); ?>
                                             </td>
-                                            <td><?php echo $ch['date_of_birth'] ? formatDate($ch['date_of_birth']) : 'N/A'; ?></td>
+                                            <td><?php echo $ch['date_of_birth'] ? formatDate($ch['date_of_birth']) : 'N/A'; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -304,7 +314,8 @@ function yn($v)
                                         <tr>
                                             <td><?php echo e(trim($sb['first_name'] . ' ' . $sb['middle_name'] . ' ' . $sb['surname'])); ?>
                                             </td>
-                                            <td><?php echo $sb['date_of_birth'] ? formatDate($sb['date_of_birth']) : 'N/A'; ?></td>
+                                            <td><?php echo $sb['date_of_birth'] ? formatDate($sb['date_of_birth']) : 'N/A'; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -559,7 +570,7 @@ function yn($v)
                         <hr>
                         <?php
                         echo field('Job Title', $emp['job_title']);
-                        echo field('Department', $emp['department']);
+                        echo field('Department', $emp['department_name']);
                         echo field('Branch', $emp['branch_name']);
                         echo field('Hire Date', formatDate($emp['hire_date']));
                         echo field('Employment Status', $emp['employment_status']);
@@ -569,6 +580,47 @@ function yn($v)
 
                     <!-- Career Movements Tab -->
                     <div class="tab-pane fade" id="t8">
+                        <!-- Career Goals Section -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-primary small fw-bold mb-0"><i class="fas fa-bullseye me-2"></i>Career Aspirations & Goals (Current)</h6>
+                            <?php if ($career_goals): ?>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="openPromoteModal()">
+                                    <i class="fas fa-rocket me-1"></i>Implement Promotion / Movement
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($career_goals): ?>
+                            <div class="p-3 border rounded bg-light mb-4 shadow-sm" id="careerAspirationsBox">
+                                <div class="row align-items-center text-center text-sm-start">
+                                    <div class="col-md-5">
+                                        <div class="small text-muted mb-1">Target Position</div>
+                                        <div class="fw-bold text-primary" style="font-size:1.1rem;"><?php echo e($career_goals['desired_position'] ?? 'N/A'); ?></div>
+                                    </div>
+                                    <div class="col-md-3 border-start">
+                                        <div class="small text-muted mb-1">Target Date</div>
+                                        <div class="fw-bold small"><?php echo $career_goals['target_date'] ? formatDate($career_goals['target_date']) : 'N/A'; ?></div>
+                                    </div>
+                                    <div class="col-md-4 border-start">
+                                        <div class="small text-muted mb-1">Last Evaluation Date</div>
+                                        <div class="fw-bold small"><?php echo formatDate($career_goals['approved_date']); ?></div>
+                                    </div>
+                                </div>
+                                <?php if (!empty($career_goals['career_growth_details'])): ?>
+                                    <div class="mt-2 pt-2 border-top small">
+                                        <span class="text-muted italic">"<?php echo e($career_goals['career_growth_details']); ?>"</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="alert alert-info py-2 small mb-4">
+                                <span class="d-block mb-1"><i class="fas fa-info-circle me-2"></i>No career goals recorded from recent evaluations.</span>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="openPromoteModal(true)">
+                                    <i class="fas fa-plus me-1"></i>Log Manual Movement
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
+                        <h6 class="mb-3 text-primary small fw-bold border-top pt-4"><i class="fas fa-history me-2"></i>Official Career Movements (History)</h6>
                         <?php if (!empty($career_movements)): ?>
                             <div class="timeline-career">
                                 <?php foreach ($career_movements as $cm):
@@ -627,7 +679,7 @@ function yn($v)
                                                 Logged by: <?php echo e($cm['logged_by_name'] ?? 'N/A'); ?>
                                                 <?php if (!empty($cm['approved_by_name'])): ?> &bull;
                                                     <?php echo e($cm['approval_status']); ?> by:
-                                                    <?php echo e($cm['approved_by_name']); ?>        <?php endif; ?>
+                                                    <?php echo e($cm['approved_by_name']); ?>         <?php endif; ?>
                                                 &bull; <?php echo formatDateTime($cm['created_at']); ?>
                                             </div>
                                         </div>
@@ -711,6 +763,115 @@ function yn($v)
         document.getElementById('fullImageName').textContent = name;
         modal.show();
     }
+
+    function openPromoteModal(manual = false) {
+        const modal = new bootstrap.Modal(document.getElementById('promoteModal'));
+        if (!manual) {
+            const goalBox = document.getElementById('careerAspirationsBox');
+            if (goalBox) {
+                document.getElementById('moveNewPosition').value = "<?php echo e($career_goals['desired_position'] ?? ''); ?>";
+                document.getElementById('moveEffectiveDate').value = "<?php echo $career_goals['target_date'] ?? date('Y-m-d'); ?>";
+                document.getElementById('moveReason').value = "Evaluation Goal from <?php echo formatDate($career_goals['approved_date'] ?? ''); ?>: <?php echo e(addslashes($career_goals['career_growth_details'] ?? '')); ?>";
+            }
+        }
+        modal.show();
+    }
+
+    function submitPromotion() {
+        const btn = document.getElementById('promoteBtn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+        const formData = new FormData(document.getElementById('promoteForm'));
+        
+        fetch('<?php echo BASE_URL; ?>/manager/ajax/add-career-movement.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred.');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    }
 </script>
+
+<?php 
+$branches_opt = $conn->query("SELECT branch_id, branch_name FROM branches ORDER BY branch_name");
+?>
+<!-- Promote Modal -->
+<div class="modal fade" id="promoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-rocket me-2"></i>Log Career Movement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="promoteForm">
+                <div class="modal-body">
+                    <input type="hidden" name="employee_id" value="<?php echo $eid; ?>">
+                    <input type="hidden" name="previous_position" value="<?php echo e($emp['job_title']); ?>">
+                    
+                    <div class="mb-3">
+                        <label class="small fw-bold mb-1">Movement Type</label>
+                        <select class="form-select form-select-sm" name="movement_type" required>
+                            <option value="Promotion" selected>Promotion</option>
+                            <option value="Transfer">Transfer</option>
+                            <option value="Role Change">Role Change</option>
+                            <option value="Demotion">Demotion</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold mb-1">New Position / Job Title</label>
+                        <input type="text" class="form-control form-control-sm border-primary" name="new_position" id="moveNewPosition" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold mb-1">Target Branch (Stay current if empty)</label>
+                        <select class="form-select form-select-sm" name="new_branch_id">
+                            <option value="">-- No Change (<?php echo e($emp['branch_name']); ?>) --</option>
+                            <?php while($b = $branches_opt->fetch_assoc()): ?>
+                                <option value="<?php echo $b['branch_id']; ?>" <?php echo $b['branch_id'] == $emp['branch_id'] ? 'disabled' : ''; ?>>
+                                    <?php echo e($b['branch_name']); ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small fw-bold mb-1">Effective Date</label>
+                        <input type="date" class="form-control form-control-sm border-info" name="effective_date" id="moveEffectiveDate" required>
+                        <div class="form-text x-small text-info"><i class="fas fa-info-circle me-1"></i>System will auto-apply title update on this date.</div>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="small fw-bold mb-1">Remarks / Reason</label>
+                        <textarea class="form-control form-control-sm" name="reason" id="moveReason" rows="3" placeholder="Enter reason for movement..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4" id="promoteBtn" onclick="submitPromotion()">
+                        <i class="fas fa-save me-1"></i>Confirm Movement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?php require_once '../includes/footer.php'; ?>

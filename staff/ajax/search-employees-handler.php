@@ -13,8 +13,9 @@ $position = trim($_GET['position'] ?? '');
 $branch = trim($_GET['branch'] ?? '');
 
 // Staff can search all active employees (no branch restriction)
-$query = "SELECT e.*, b.branch_name FROM employees e 
+$query = "SELECT e.*, b.branch_name, d.department_name FROM employees e 
           LEFT JOIN branches b ON e.branch_id = b.branch_id 
+          LEFT JOIN departments d ON e.department_id = d.department_id
           WHERE e.is_active = 1";
 
 $params = [];
@@ -36,9 +37,9 @@ if (!empty($branch)) {
 }
 
 if (!empty($dept)) {
-    $query .= " AND e.department = ?";
-    $params[] = $dept;
-    $types .= "s";
+    $query .= " AND e.department_id = ?";
+    $params[] = (int)$dept;
+    $types .= "i";
 }
 
 if (!empty($status)) {

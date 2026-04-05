@@ -7,23 +7,24 @@ require_once '../includes/header.php';
 // Fetch stats
 $branch_id = $_SESSION['branch_id'];
 
-$total_employees = $conn->query("SELECT COUNT(*) as c FROM employees WHERE is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
-$pending_evals = $conn->query("SELECT COUNT(*) as c FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Pending Manager' AND e.branch_id = $branch_id")->fetch_assoc()['c'];
-$pending_movements = $conn->query("SELECT COUNT(*) as c FROM career_movements cm LEFT JOIN employees e ON cm.employee_id = e.employee_id WHERE cm.approval_status = 'Pending' AND e.branch_id = $branch_id")->fetch_assoc()['c'];
-$avg_score_result = $conn->query("SELECT AVG(ev.total_score) as avg FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Approved' AND e.branch_id = $branch_id");
+$total_employees = $conn->query("SELECT COUNT(*) as c FROM employees WHERE is_active = 1")->fetch_assoc()['c'];
+$pending_evals = $conn->query("SELECT COUNT(*) as c FROM evaluations WHERE status = 'Pending Manager'")->fetch_assoc()['c'];
+$pending_movements = $conn->query("SELECT COUNT(*) as c FROM career_movements WHERE approval_status = 'Pending'")->fetch_assoc()['c'];
+$avg_score_result = $conn->query("SELECT AVG(total_score) as avg FROM evaluations WHERE status = 'Approved'");
 $avg_score = round($avg_score_result->fetch_assoc()['avg'] ?? 0, 1);
-$new_evals_month = $conn->query("SELECT COUNT(*) as c FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE MONTH(ev.submitted_date) = MONTH(CURRENT_DATE()) AND YEAR(ev.submitted_date) = YEAR(CURRENT_DATE()) AND e.branch_id = $branch_id")->fetch_assoc()['c'];
+$new_evals_month = $conn->query("SELECT COUNT(*) as c FROM evaluations WHERE MONTH(submitted_date) = MONTH(CURRENT_DATE()) AND YEAR(submitted_date) = YEAR(CURRENT_DATE())")->fetch_assoc()['c'];
+$total_branches = $conn->query("SELECT COUNT(*) as c FROM branches")->fetch_assoc()['c'];
 
 // Gender Counts
-$male_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Male' AND is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
-$female_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Female' AND is_active = 1 AND branch_id = $branch_id")->fetch_assoc()['c'];
+$male_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Male' AND is_active = 1")->fetch_assoc()['c'];
+$female_count = $conn->query("SELECT COUNT(*) as c FROM employees WHERE gender = 'Female' AND is_active = 1")->fetch_assoc()['c'];
 
 // Fetch pending evaluations (5 most recent)
 $pending_evals_list = $conn->query("SELECT ev.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, u.full_name as submitted_by_name
     FROM evaluations ev
     LEFT JOIN employees e ON ev.employee_id = e.employee_id
     LEFT JOIN users u ON ev.submitted_by = u.user_id
-    WHERE ev.status = 'Pending Manager' AND e.branch_id = $branch_id
+    WHERE ev.status = 'Pending Manager'
     ORDER BY ev.submitted_date DESC LIMIT 5");
 
 // Fetch pending career movements (5 most recent)
@@ -31,12 +32,12 @@ $pending_cm_list = $conn->query("SELECT cm.*, CONCAT(e.first_name, ' ', e.last_n
     FROM career_movements cm
     LEFT JOIN employees e ON cm.employee_id = e.employee_id
     LEFT JOIN users u ON cm.logged_by = u.user_id
-    WHERE cm.approval_status = 'Pending' AND e.branch_id = $branch_id
+    WHERE cm.approval_status = 'Pending'
     ORDER BY cm.created_at DESC LIMIT 5");
 
 // 1. Performance Distribution Data
-$perf_dist = $conn->query("SELECT ev.performance_level, COUNT(*) as count FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE ev.status = 'Approved' AND ev.performance_level IS NOT NULL AND e.branch_id = $branch_id GROUP BY ev.performance_level");
-$perf_data = ['Excellent' => 0, 'Above Average' => 0, 'Average' => 0, 'Needs Improvement' => 0];
+$perf_dist = $conn->query("SELECT performance_level, COUNT(*) as count FROM evaluations WHERE status = 'Approved' AND performance_level IS NOT NULL GROUP BY performance_level");
+$perf_data = ['Outstanding' => 0, 'Exceeds Expectations' => 0, 'Meets Expectations' => 0, 'Needs Improvement' => 0];
 while ($row = $perf_dist->fetch_assoc()) {
     if (isset($perf_data[$row['performance_level']])) {
         $perf_data[$row['performance_level']] = (int) $row['count'];
@@ -44,7 +45,7 @@ while ($row = $perf_dist->fetch_assoc()) {
 }
 
 // 2. Evaluation Status Data
-$status_dist = $conn->query("SELECT ev.status, COUNT(*) as count FROM evaluations ev LEFT JOIN employees e ON ev.employee_id = e.employee_id WHERE e.branch_id = $branch_id GROUP BY ev.status");
+$status_dist = $conn->query("SELECT status, COUNT(*) as count FROM evaluations GROUP BY status");
 $status_labels = [];
 $status_counts = [];
 while ($row = $status_dist->fetch_assoc()) {
@@ -122,6 +123,17 @@ while ($row = $status_dist->fetch_assoc()) {
                 <p>New Evals This Month</p>
             </div>
         </div>
+    </div>
+    <div class="col-xl-3 col-lg-4 col-md-6">
+        <a href="branches.php" class="text-decoration-none border-0 p-0 m-0 w-100">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-building"></i></div>
+                <div class="stat-info">
+                    <h3><?php echo $total_branches; ?></h3>
+                    <p>Total Branches</p>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
@@ -289,9 +301,9 @@ while ($row = $status_dist->fetch_assoc()) {
         new Chart(document.getElementById('perfPieChart'), {
             type: 'pie',
             data: {
-                labels: ['Excellent', 'Above Average', 'Average', 'Needs Improvement'],
+                labels: ['Outstanding', 'Exceeds Expectations', 'Meets Expectations', 'Needs Improvement'],
                 datasets: [{
-                    data: [<?php echo $perf_data['Excellent']; ?>, <?php echo $perf_data['Above Average']; ?>, <?php echo $perf_data['Average']; ?>, <?php echo $perf_data['Needs Improvement']; ?>],
+                    data: [<?php echo $perf_data['Outstanding']; ?>, <?php echo $perf_data['Exceeds Expectations']; ?>, <?php echo $perf_data['Meets Expectations']; ?>, <?php echo $perf_data['Needs Improvement']; ?>],
                     backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545'],
                     borderWidth: 2,
                     borderColor: '#fff'

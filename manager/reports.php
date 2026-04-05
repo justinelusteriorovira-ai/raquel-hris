@@ -6,7 +6,7 @@ require_once '../includes/header.php';
 
 // Fetch branches and departments for filter dropdowns
 $branches = $conn->query("SELECT branch_id, branch_name FROM branches WHERE is_active = 1 AND deleted_at IS NULL ORDER BY branch_name");
-$departments = $conn->query("SELECT DISTINCT department FROM employees WHERE is_active = 1 AND deleted_at IS NULL ORDER BY department");
+$departments = $conn->query("SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY department_name");
 ?>
 
 <!-- Report Generation Module -->
@@ -86,7 +86,7 @@ $departments = $conn->query("SELECT DISTINCT department FROM employees WHERE is_
                     <select class="form-select" name="department" id="filterDepartment">
                         <option value="">All Departments</option>
                         <?php while ($d = $departments->fetch_assoc()): ?>
-                            <option value="<?php echo e($d['department']); ?>"><?php echo e($d['department']); ?></option>
+                            <option value="<?php echo $d['department_id']; ?>"><?php echo e($d['department_name']); ?></option>
                         <?php endwhile; ?>
                     </select>
                 </div>

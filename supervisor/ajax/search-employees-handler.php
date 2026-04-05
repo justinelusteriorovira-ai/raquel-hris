@@ -12,8 +12,10 @@ $status = trim($_GET['status'] ?? '');
 $type = trim($_GET['type'] ?? '');
 $position = trim($_GET['position'] ?? '');
 
-$query = "SELECT e.*, b.branch_name FROM employees e 
+$query = "SELECT e.*, b.branch_name, d.department_name 
+          FROM employees e 
           LEFT JOIN branches b ON e.branch_id = b.branch_id 
+          LEFT JOIN departments d ON e.department_id = d.department_id
           WHERE e.branch_id = $branch_id AND e.is_active = 1";
 
 $params = [];
@@ -29,9 +31,9 @@ if (!empty($search)) {
 }
 
 if (!empty($dept)) {
-    $query .= " AND e.department = ?";
-    $params[] = $dept;
-    $types .= "s";
+    $query .= " AND e.department_id = ?";
+    $params[] = (int)$dept;
+    $types .= "i";
 }
 
 if (!empty($status)) {

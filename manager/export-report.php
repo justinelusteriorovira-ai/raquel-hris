@@ -8,7 +8,7 @@ checkRole(['HR Manager']);
 
 $report_type = $_GET['report_type'] ?? '';
 $branch_id   = intval($_GET['branch_id'] ?? 0);
-$department  = trim($_GET['department'] ?? '');
+$department_id = intval($_GET['department'] ?? 0);
 $date_from   = trim($_GET['date_from'] ?? '');
 $date_to     = trim($_GET['date_to'] ?? '');
 $export_type = strtolower(trim($_GET['export_type'] ?? 'csv'));
@@ -32,12 +32,13 @@ switch ($report_type) {
         $types = '';
 
         if ($branch_id > 0) { $where .= " AND e.branch_id = ?"; $params[] = $branch_id; $types .= 'i'; }
-        if (!empty($department)) { $where .= " AND e.department = ?"; $params[] = $department; $types .= 's'; }
+        if ($department_id > 0) { $where .= " AND e.department_id = ?"; $params[] = $department_id; $types .= 'i'; }
 
-        $sql = "SELECT e.last_name, e.first_name, e.middle_name, e.job_title, e.department, e.hire_date,
+        $sql = "SELECT e.last_name, e.first_name, e.middle_name, e.job_title, d.department_name, e.hire_date,
                        e.employment_status, e.employment_type, b.branch_name, c.mobile_number, c.personal_email
                 FROM employees e
                 LEFT JOIN branches b ON e.branch_id = b.branch_id
+                LEFT JOIN departments d ON e.department_id = d.department_id
                 LEFT JOIN employee_contacts c ON e.employee_id = c.employee_id
                 $where ORDER BY e.last_name, e.first_name";
 
@@ -50,7 +51,7 @@ switch ($report_type) {
             $rows[] = [
                 $i++,
                 $r['last_name'], $r['first_name'], $r['middle_name'] ?? '',
-                $r['job_title'], $r['department'], $r['branch_name'] ?? 'N/A',
+                $r['job_title'], $r['department_name'] ?? 'N/A', $r['branch_name'] ?? 'N/A',
                 $r['hire_date'] ? date('M d, Y', strtotime($r['hire_date'])) : 'N/A',
                 $r['employment_status'], $r['employment_type'],
                 $r['mobile_number'] ?? 'N/A', $r['personal_email'] ?? 'N/A'
@@ -71,16 +72,17 @@ switch ($report_type) {
         $types = '';
 
         if ($branch_id > 0) { $where .= " AND e.branch_id = ?"; $params[] = $branch_id; $types .= 'i'; }
-        if (!empty($department)) { $where .= " AND e.department = ?"; $params[] = $department; $types .= 's'; }
+        if ($department_id > 0) { $where .= " AND e.department_id = ?"; $params[] = $department_id; $types .= 'i'; }
         if (!empty($date_from)) { $where .= " AND ev.approved_date >= ?"; $params[] = $date_from; $types .= 's'; }
         if (!empty($date_to)) { $where .= " AND ev.approved_date <= ?"; $params[] = $date_to . ' 23:59:59'; $types .= 's'; }
 
-        $sql = "SELECT CONCAT(e.last_name, ', ', e.first_name) as employee_name, e.job_title, e.department,
+        $sql = "SELECT CONCAT(e.last_name, ', ', e.first_name) as employee_name, e.job_title, d.department_name,
                        b.branch_name, et.template_name, ev.total_score, ev.performance_level,
                        ev.evaluation_period_start, ev.evaluation_period_end, ev.approved_date
                 FROM evaluations ev
                 LEFT JOIN employees e ON ev.employee_id = e.employee_id
                 LEFT JOIN branches b ON e.branch_id = b.branch_id
+                LEFT JOIN departments d ON e.department_id = d.department_id
                 LEFT JOIN evaluation_templates et ON ev.template_id = et.template_id
                 $where ORDER BY ev.approved_date DESC, e.last_name";
 
@@ -96,7 +98,7 @@ switch ($report_type) {
             }
             $rows[] = [
                 $i++,
-                $r['employee_name'], $r['job_title'], $r['department'],
+                $r['employee_name'], $r['job_title'], $r['department_name'] ?? 'N/A',
                 $r['branch_name'] ?? 'N/A', $r['template_name'] ?? '',
                 $period, number_format($r['total_score'], 1),
                 $r['performance_level'] ?? 'N/A',
@@ -118,7 +120,7 @@ switch ($report_type) {
         $types = '';
 
         if ($branch_id > 0) { $where .= " AND (cm.previous_branch_id = ? OR cm.new_branch_id = ?)"; $params[] = $branch_id; $params[] = $branch_id; $types .= 'ii'; }
-        if (!empty($department)) { $where .= " AND e.department = ?"; $params[] = $department; $types .= 's'; }
+        if ($department_id > 0) { $where .= " AND e.department_id = ?"; $params[] = $department_id; $types .= 'i'; }
         if (!empty($date_from)) { $where .= " AND cm.effective_date >= ?"; $params[] = $date_from; $types .= 's'; }
         if (!empty($date_to)) { $where .= " AND cm.effective_date <= ?"; $params[] = $date_to; $types .= 's'; }
 
@@ -131,6 +133,7 @@ switch ($report_type) {
                 LEFT JOIN employees e ON cm.employee_id = e.employee_id
                 LEFT JOIN branches pb ON cm.previous_branch_id = pb.branch_id
                 LEFT JOIN branches nb ON cm.new_branch_id = nb.branch_id
+                LEFT JOIN departments d ON e.department_id = d.department_id
                 LEFT JOIN users u ON cm.logged_by = u.user_id
                 $where ORDER BY cm.effective_date DESC";
 

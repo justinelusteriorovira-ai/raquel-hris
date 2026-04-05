@@ -45,7 +45,13 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 require_once '../includes/header.php';
 
 // Fetch employees
-$employees = $conn->query("SELECT e.*, b.branch_name FROM employees e LEFT JOIN branches b ON e.branch_id = b.branch_id ORDER BY e.last_name, e.first_name");
+$employees = $conn->query("
+    SELECT e.*, b.branch_name, d.department_name 
+    FROM employees e 
+    LEFT JOIN branches b ON e.branch_id = b.branch_id 
+    LEFT JOIN departments d ON e.department_id = d.department_id 
+    ORDER BY e.last_name, e.first_name
+");
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -93,7 +99,7 @@ $employees = $conn->query("SELECT e.*, b.branch_name FROM employees e LEFT JOIN 
                                 </div>
                             </td>
                             <td><?php echo e($emp['job_title']); ?></td>
-                            <td><?php echo e($emp['department']); ?></td>
+                            <td><?php echo e($emp['department_name'] ?? 'N/A'); ?></td>
                             <td><?php echo e($emp['branch_name'] ?? 'N/A'); ?></td>
                             <td>
                                 <span class="badge <?php echo $emp['is_active'] ? 'bg-success' : 'bg-danger'; ?>">

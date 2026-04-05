@@ -6,8 +6,7 @@ require_once '../includes/functions.php';
 require_once '../includes/header.php';
 
 // Fetch departments for the filter dropdown
-$dept_stmt = $conn->query("SELECT DISTINCT department FROM employees WHERE department IS NOT NULL AND department != '' ORDER BY department");
-$departments = $dept_stmt ? $dept_stmt->fetch_all(MYSQLI_ASSOC) : [];
+$departments = $conn->query("SELECT department_id, department_name FROM departments WHERE is_active = 1 ORDER BY department_name")->fetch_all(MYSQLI_ASSOC);
 
 // Fetch branches for the filter dropdown
 $branch_stmt = $conn->query("SELECT branch_id, branch_name FROM branches ORDER BY branch_name");
@@ -44,7 +43,7 @@ $branches = $branch_stmt ? $branch_stmt->fetch_all(MYSQLI_ASSOC) : [];
                         <select name="department" class="form-select" id="filterDept">
                             <option value="">All Departments</option>
                             <?php foreach ($departments as $d): ?>
-                                <option value="<?php echo e($d['department']); ?>"><?php echo e($d['department']); ?></option>
+                                <option value="<?php echo $d['department_id']; ?>"><?php echo e($d['department_name']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -174,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </td>
                             <td>
                                 <div class="small fw-semibold text-dark">${emp.job_title}</div>
-                                <div class="small text-muted">${emp.department || 'N/A'}</div>
+                                <div class="small text-muted">${emp.department_name || 'N/A'}</div>
                             </td>
                             <td>
                                 <div class="small text-dark">${emp.branch_name || 'N/A'}</div>
