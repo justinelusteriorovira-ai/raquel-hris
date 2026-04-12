@@ -18,12 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $beh_scores = $_POST['beh_scores'] ?? [];
     $edit_id = isset($_POST['edit_id']) ? (int)$_POST['edit_id'] : null;
 
-    // Career growth
+    // Career growth (aligned with official evaluation form)
+    $career_growth_suited = isset($_POST['career_growth_suited']) ? (int)$_POST['career_growth_suited'] : 0;
+    $desired_position = ($career_growth_suited == 1) ? trim($_POST['desired_position'] ?? '') : '';
+    $career_growth_details = trim($_POST['career_growth_details'] ?? '');
+    // Keep legacy fields for compatibility
     $current_position = trim($_POST['current_position'] ?? '');
     $months_in_position = (int)($_POST['months_in_position'] ?? 0);
-    $desired_position = trim($_POST['desired_position'] ?? '');
-    $target_date = !empty($_POST['target_date']) ? $_POST['target_date'] : null;
-    $career_growth_details = trim($_POST['career_growth_details'] ?? '');
+    $target_date = null;
 
     // Dev plans
     $dev_areas = $_POST['dev_area'] ?? [];
@@ -72,16 +74,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submitted_date = ($action === 'submit') ? date('Y-m-d H:i:s') : null;
 
     if ($edit_id) {
-        $stmt = $conn->prepare("UPDATE evaluations SET employee_id=?, template_id=?, evaluation_type=?, evaluation_period_start=?, evaluation_period_end=?, status=?, total_score=?, kra_subtotal=?, behavior_average=?, performance_level=?, submitted_date=?, staff_comments=?, current_position=?, months_in_position=?, desired_position=?, target_date=?, career_growth_details=? WHERE evaluation_id=? AND submitted_by=?");
-        $stmt->bind_param("iissssddssssisssii", $employee_id, $template_id, $evaluation_type, $period_start, $period_end, $status, $total_score, $kra_subtotal, $behavior_average, $performance_level, $submitted_date, $staff_comments, $current_position, $months_in_position, $desired_position, $target_date, $career_growth_details, $edit_id, $_SESSION['user_id']);
+        // UPDATE: 20 params
+        // i=employee_id, i=template_id, s=type, s=period_start, s=period_end,
+        // s=status, d=total_score, d=kra_subtotal, d=behavior_average,
+        // s=performance_level, s=submitted_date, s=staff_comments, s=current_position,
+        // i=months_in_position, s=desired_position, s=target_date,
+        // i=career_growth_suited, s=career_growth_details, i=edit_id, i=user_id
+        $stmt = $conn->prepare("UPDATE evaluations SET employee_id=?, template_id=?, evaluation_type=?, evaluation_period_start=?, evaluation_period_end=?, status=?, total_score=?, kra_subtotal=?, behavior_average=?, performance_level=?, submitted_date=?, staff_comments=?, current_position=?, months_in_position=?, desired_position=?, target_date=?, career_growth_suited=?, career_growth_details=? WHERE evaluation_id=? AND submitted_by=?");
+        $stmt->bind_param("iissssdddssssissisii", $employee_id, $template_id, $evaluation_type, $period_start, $period_end, $status, $total_score, $kra_subtotal, $behavior_average, $performance_level, $submitted_date, $staff_comments, $current_position, $months_in_position, $desired_position, $target_date, $career_growth_suited, $career_growth_details, $edit_id, $_SESSION['user_id']);
         $stmt->execute();
         $stmt->close();
         $conn->query("DELETE FROM evaluation_scores WHERE evaluation_id = $edit_id");
         $conn->query("DELETE FROM evaluation_dev_plans WHERE evaluation_id = $edit_id");
         $eval_id = $edit_id;
     } else {
-        $stmt = $conn->prepare("INSERT INTO evaluations (employee_id, template_id, evaluation_type, evaluation_period_start, evaluation_period_end, submitted_by, status, total_score, kra_subtotal, behavior_average, performance_level, submitted_date, staff_comments, current_position, months_in_position, desired_position, target_date, career_growth_details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("iisssisddssssissss", $employee_id, $template_id, $evaluation_type, $period_start, $period_end, $_SESSION['user_id'], $status, $total_score, $kra_subtotal, $behavior_average, $performance_level, $submitted_date, $staff_comments, $current_position, $months_in_position, $desired_position, $target_date, $career_growth_details);
+        // INSERT: 19 params
+        // i=employee_id, i=template_id, s=type, s=period_start, s=period_end, i=user_id,
+        // s=status, d=total_score, d=kra_subtotal, d=behavior_average,
+        // s=performance_level, s=submitted_date, s=staff_comments, s=current_position,
+        // i=months_in_position, s=desired_position, s=target_date,
+        // i=career_growth_suited, s=career_growth_details
+        $stmt = $conn->prepare("INSERT INTO evaluations (employee_id, template_id, evaluation_type, evaluation_period_start, evaluation_period_end, submitted_by, status, total_score, kra_subtotal, behavior_average, performance_level, submitted_date, staff_comments, current_position, months_in_position, desired_position, target_date, career_growth_suited, career_growth_details) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iisssisdddssssissis", $employee_id, $template_id, $evaluation_type, $period_start, $period_end, $_SESSION['user_id'], $status, $total_score, $kra_subtotal, $behavior_average, $performance_level, $submitted_date, $staff_comments, $current_position, $months_in_position, $desired_position, $target_date, $career_growth_suited, $career_growth_details);
         $stmt->execute();
         $eval_id = $stmt->insert_id;
         $stmt->close();
@@ -161,10 +175,10 @@ if (!empty($selected_template_id)) {
 ?>
 
 <style>
-    .step-wizard { display: flex; justify-content: space-between; position: relative; z-index: 1; }
-    .step-wizard .step { flex: 1; text-align: center; font-size: 0.85rem; padding-bottom: 10px; border-bottom: 3px solid #dee2e6; color: #6c757d; cursor: default; transition: all 0.3s; }
-    .step-wizard .step.active { color: #5a3e1b; border-bottom-color: #5a3e1b; font-weight: bold; }
-    .step-wizard .step.completed { color: #7a9a3a; border-bottom-color: #7a9a3a; }
+    .step-wizard { display: flex; justify-content: space-between; position: relative; z-index: 1; background: #fff; padding-top: 5px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .step-wizard .step { flex: 1; text-align: center; font-size: 0.95rem; font-weight: 600; padding: 12px 10px; border-bottom: 5px solid #e9ecef; color: #adb5bd; cursor: default; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px; }
+    .step-wizard .step.active { color: #0d6efd; border-bottom-color: #0d6efd; font-weight: 800; background-color: rgba(13, 110, 253, 0.05); }
+    .step-wizard .step.completed { color: #198754; border-bottom-color: #198754; font-weight: 700; background-color: rgba(25, 135, 84, 0.05); }
     
     /* Official Form Inspired Styling */
     .form-style-container { border: 1px solid #000; padding: 0; background: #fff; margin-top: 15px; }
@@ -204,6 +218,31 @@ if (!empty($selected_template_id)) {
     </div>
     <div class="card-body">
         
+        <?php if (!$edit_eval): ?>
+        <!-- Draft Restored Banner (new submissions only) -->
+        <div id="evalDraftBanner" class="alert d-none mb-3" role="alert"
+            style="background:linear-gradient(135deg,#fff8e1,#fff3e0);border:1.5px solid #ffa000;border-radius:10px;">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-history fa-lg text-warning"></i>
+                    <div>
+                        <div class="fw-bold text-dark small">Unsaved Draft Restored</div>
+                        <div class="x-small text-muted" id="evalDraftTimestamp"></div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="discardEvalDraft()">
+                        <i class="fas fa-trash me-1"></i>Discard
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill"
+                        onclick="document.getElementById('evalDraftBanner').classList.add('d-none')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Sticky Summary (Visible from Step 3 onwards) -->
         <div id="stickySummary" class="summary-overlay">
             <div class="d-flex justify-content-between align-items-center">
@@ -211,7 +250,7 @@ if (!empty($selected_template_id)) {
                     <div class="small"><strong>Total Rating:</strong> <span id="stickyTotal" class="fw-bold text-primary">0.00</span></div>
                     <div class="small"><strong>Performance Level:</strong> <span id="stickyLevel" class="badge bg-secondary">Pending</span></div>
                 </div>
-                <div class="small text-muted">Draft Saved: <span id="lastSaveTime">-</span></div>
+                <div class="small text-muted">Auto-saved: <span id="lastSaveTime">-</span></div>
             </div>
         </div>
 
@@ -275,31 +314,47 @@ if (!empty($selected_template_id)) {
                             <label class="form-label-custom">Position</label>
                             <input type="text" class="form-control form-control-sm border-0 bg-transparent fw-bold" id="currentPosStatic" readonly placeholder="Select employee...">
                         </td>
-                        <td>
+                        <td style="width:20%;">
                             <label class="form-label-custom">Date Filed</label>
                             <input type="text" class="form-control form-control-sm border-0 bg-transparent" value="<?php echo date('m/d/Y'); ?>" readonly>
                         </td>
                     </tr>
                     <tr>
-                        <td rowspan="2">
-                            <label class="form-label-custom">Evaluation Period <span class="text-muted small">(mm/dd/yyyy)</span></label>
-                            <div class="d-flex align-items-center gap-2 mt-2">
-                                <span class="small">From:</span>
-                                <input type="date" class="form-control form-control-sm" name="period_start" value="<?php echo e($edit_eval['evaluation_period_start'] ?? ''); ?>" required>
-                                <span class="small">To:</span>
-                                <input type="date" class="form-control form-control-sm" name="period_end" value="<?php echo e($edit_eval['evaluation_period_end'] ?? ''); ?>" required>
+                        <td style="width:50%; vertical-align: top;">
+                            <label class="form-label-custom mb-2">Evaluation Period</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small fw-bold">From:</span>
+                                        <input type="date" class="form-control form-control-sm" name="period_start" value="<?php echo e($edit_eval['evaluation_period_start'] ?? ''); ?>" required>
+                                    </div>
+                                    <span class="text-muted" style="font-size:0.7rem; margin-left:45px;">(mm/dd/yyyy)</span>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="small fw-bold">To:</span>
+                                        <input type="date" class="form-control form-control-sm" name="period_end" value="<?php echo e($edit_eval['evaluation_period_end'] ?? ''); ?>" required>
+                                    </div>
+                                    <span class="text-muted" style="font-size:0.7rem; margin-left:30px;">(mm/dd/yyyy)</span>
+                                </div>
                             </div>
                         </td>
-                        <td colspan="2">
-                            <label class="form-label-custom">Evaluation Type</label>
-                            <div class="d-flex gap-3 mt-1">
+                        <td style="width:30%; vertical-align: top;">
+                            <label class="form-label-custom mb-2">Evaluation Type</label>
+                            <div class="row g-2 px-1">
                                 <?php foreach (['Initial','Final','Quarterly','Annual'] as $et): ?>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="evaluation_type" id="type_<?php echo $et; ?>" value="<?php echo $et; ?>" <?php echo ($edit_eval['evaluation_type'] ?? 'Annual') === $et ? 'checked' : ''; ?>>
-                                        <label class="form-check-label small" for="type_<?php echo $et; ?>"><?php echo $et; ?></label>
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="evaluation_type" id="type_<?php echo $et; ?>" value="<?php echo $et; ?>" <?php echo ($edit_eval['evaluation_type'] ?? 'Annual') === $et ? 'checked' : ''; ?>>
+                                            <label class="form-check-label small" style="cursor:pointer" for="type_<?php echo $et; ?>"><?php echo $et; ?></label>
+                                        </div>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
+                        </td>
+                        <td style="width:20%; vertical-align: top;">
+                            <label class="form-label-custom">Department/Branch</label>
+                            <input type="text" class="form-control form-control-sm border-0 bg-transparent fw-bold" id="currentDeptStatic" readonly placeholder="-">
                         </td>
                     </tr>
                 </table>
@@ -394,35 +449,36 @@ if (!empty($selected_template_id)) {
                         <i class="fas fa-plus me-1"></i>Add Development Goal
                     </button>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label class="form-label-custom">IV. Career Growth and Development</label>
-                            <div class="p-3 border bg-light">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold">Current Position</label>
-                                        <input type="text" class="form-control form-control-sm bg-light" name="current_position" id="currentPosInput" value="<?php echo e($edit_eval['current_position'] ?? ''); ?>" readonly>
+                    <!-- Hidden legacy fields for DB compatibility -->
+                    <input type="hidden" name="current_position" id="currentPosInput" value="<?php echo e($edit_eval['current_position'] ?? ''); ?>">
+                    <input type="hidden" name="months_in_position" value="<?php echo e($edit_eval['months_in_position'] ?? '0'); ?>">
+
+                    <!-- IV. Career Growth (matching official evaluation form) -->
+                    <div class="mb-4">
+                        <label class="form-label-custom">IV. Career Growth</label>
+                        <div class="p-3 border" style="background:#f8fdf5; border-left: 4px solid #5a3e1b !important;">
+                            <div class="mb-3">
+                                <div class="fw-semibold mb-2" style="font-size:0.92rem;">Is the employee better suited for another job within the company?</div>
+                                <div class="d-flex gap-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="career_growth_suited" id="suited_yes" value="1"
+                                            <?php echo ($edit_eval['career_growth_suited'] ?? 0) == 1 ? 'checked' : ''; ?>
+                                            onchange="toggleSuitedField()">
+                                        <label class="form-check-label fw-bold text-success" for="suited_yes">&#9745; Yes</label>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold">Months in position</label>
-                                        <input type="number" class="form-control form-control-sm" name="months_in_position" value="<?php echo e($edit_eval['months_in_position'] ?? '0'); ?>">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-primary">Desired Position (Career Goal)</label>
-                                        <select class="form-select form-select-sm border-primary" name="desired_position">
-                                            <option value="">-- Select Desired Position --</option>
-                                            <?php foreach ($positions_list as $pos): ?>
-                                                <option value="<?php echo e($pos); ?>" <?php echo (isset($edit_eval['desired_position']) && $edit_eval['desired_position'] == $pos) ? 'selected' : ''; ?>>
-                                                    <?php echo e($pos); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-primary">Target Date</label>
-                                        <input type="date" class="form-control form-control-sm border-primary" name="target_date" value="<?php echo e($edit_eval['target_date'] ?? ''); ?>">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="career_growth_suited" id="suited_no" value="0"
+                                            <?php echo ($edit_eval['career_growth_suited'] ?? 0) == 0 ? 'checked' : ''; ?>
+                                            onchange="toggleSuitedField()">
+                                        <label class="form-check-label fw-bold" for="suited_no">&#9744; No</label>
                                     </div>
                                 </div>
+                            </div>
+                            <div id="suitedJobField" style="display:<?php echo ($edit_eval['career_growth_suited'] ?? 0) == 1 ? 'block' : 'none'; ?>;">
+                                <label class="small fw-bold mb-1">If yes, specify the job function / department:</label>
+                                <input type="text" class="form-control form-control-sm" name="desired_position"
+                                    value="<?php echo e($edit_eval['desired_position'] ?? ''); ?>"
+                                    placeholder="e.g., Branch Manager / Operations Department">
                             </div>
                         </div>
                     </div>
@@ -433,13 +489,18 @@ if (!empty($selected_template_id)) {
                     </div>
                 </div>
 
-                <div class="p-3 d-flex justify-content-between bg-light border-top">
-                    <button type="button" class="btn btn-outline-secondary px-4" onclick="goToStep(4)"><i class="fas fa-chevron-left me-2"></i>Back</button>
+                <div class="p-3 d-flex justify-content-between align-items-center bg-light border-top">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-outline-secondary px-4" onclick="goToStep(4)"><i class="fas fa-chevron-left me-2"></i>Back</button>
+                        <span id="evalAutosaveIndicator" class="text-muted small d-none" style="transition:opacity 0.5s;">
+                            <i class="fas fa-cloud me-1 text-success"></i><span id="evalAutosaveText">Draft saved</span>
+                        </span>
+                    </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" name="submit_action" value="draft" class="btn btn-outline-dark px-4">
+                        <button type="submit" name="submit_action" value="draft" class="btn btn-outline-dark px-4" onclick="clearEvalDraft()">
                             <i class="fas fa-save me-1"></i>Save Draft
                         </button>
-                        <button type="submit" name="submit_action" value="submit" class="btn btn-success px-5 fw-bold">
+                        <button type="submit" name="submit_action" value="submit" class="btn btn-success px-5 fw-bold" onclick="clearEvalDraft()">
                             <i class="fas fa-paper-plane me-2"></i>SUBMIT EVALUATION
                         </button>
                     </div>
@@ -600,6 +661,19 @@ function esc(str) {
     return d.innerHTML;
 }
 
+function toggleSuitedField() {
+    const suited = document.querySelector('input[name="career_growth_suited"]:checked');
+    const field = document.getElementById('suitedJobField');
+    if (!field) return;
+    if (suited && suited.value === '1') {
+        field.style.display = 'block';
+    } else {
+        field.style.display = 'none';
+        const inp = field.querySelector('input[name="desired_position"]');
+        if (inp) inp.value = '';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Consolidated Employee Selection Logic
     const empSelect = document.getElementById('empSelect');
@@ -609,9 +683,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (emp) {
                 const jobTitle = emp.job_title || 'N/A';
                 const departmentName = emp.department_name || '';
-                // Update Step 1 Static Display
+                // Update Step 1 Static Displays
                 const staticPos = document.getElementById('currentPosStatic');
                 if (staticPos) staticPos.value = jobTitle;
+                const staticDept = document.getElementById('currentDeptStatic');
+                if (staticDept) staticDept.value = departmentName;
                 
                 // Update Step 5 Input
                 const targetInput = document.getElementById('currentPosInput');
@@ -660,30 +736,243 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelectorAll('.dev-plan-row').length === 0) {
         for(let i=0; i<3; i++) addDevPlan();
     }
+
+<?php if (!$edit_eval): ?>
+    // ── Auto-save: only for NEW submissions, not edit mode ──
+    initEvalDraft();
+<?php else: ?>
+    // Edit mode: fetch criteria and prefill with saved DB scores
+    const dbScores = <?php echo json_encode($edit_scores ?: (object)[]); ?>;
+    loadCriteriaWithScores(dbScores, dbScores);
+    goToStep(3);
+<?php endif; ?>
 });
 
-function esc(str) {
-    const d = document.createElement('div');
-    d.textContent = str || '';
-    return d.innerHTML;
+// ============================================================
+// EVAL FORM AUTO-SAVE / DRAFT (localStorage)
+// ============================================================
+const EVAL_DRAFT_KEY = 'hris_eval_draft';
+let evalAutosaveTimer = null;
+let currentEvalStep = 1;
+
+function collectEvalDraft() {
+    // KRA scores
+    const kraScores = {};
+    document.querySelectorAll('.kra-score-input').forEach(inp => {
+        const m = inp.name.match(/\[(\d+)\]/);
+        if (m) kraScores[m[1]] = inp.value;
+    });
+    // Behavior scores
+    const behScores = {};
+    document.querySelectorAll('.beh-score-input').forEach(inp => {
+        const m = inp.name.match(/\[(\d+)\]/);
+        if (m) behScores[m[1]] = inp.value;
+    });
+    // Dev plan rows
+    const devPlans = [];
+    document.querySelectorAll('.dev-plan-row').forEach(row => {
+        devPlans.push({
+            area: row.querySelector('[name="dev_area[]"]')?.value || '',
+            support: row.querySelector('[name="dev_support[]"]')?.value || '',
+            timeframe: row.querySelector('[name="dev_timeframe[]"]')?.value || ''
+        });
+    });
+    return {
+        employee_id: document.getElementById('empSelect')?.value || '',
+        period_start: document.querySelector('[name="period_start"]')?.value || '',
+        period_end: document.querySelector('[name="period_end"]')?.value || '',
+        evaluation_type: document.querySelector('[name="evaluation_type"]:checked')?.value || 'Annual',
+        template_id: document.getElementById('templateSelect')?.value || '',
+        kraScores,
+        behScores,
+        devPlans,
+        career_growth_suited: document.querySelector('[name="career_growth_suited"]:checked')?.value || '0',
+        desired_position: document.querySelector('[name="desired_position"]')?.value || '',
+        staff_comments: document.querySelector('[name="staff_comments"]')?.value || '',
+        currentStep: currentEvalStep,
+        savedAt: new Date().toISOString()
+    };
 }
 
-<?php if ($edit_eval || !empty($selected_template_id)): ?>
-document.addEventListener('DOMContentLoaded', function() {
-    <?php if ($edit_eval): ?>
-    goToStep(3);
-    <?php endif; ?>
-    calculateAllScores();
-});
-<?php endif; ?>
+function saveEvalDraft() {
+    try {
+        const draft = collectEvalDraft();
+        // Only save if something meaningful entered
+        if (!draft.employee_id && !draft.template_id) return;
+        localStorage.setItem(EVAL_DRAFT_KEY, JSON.stringify(draft));
+        // Update sticky bar save time
+        const t = new Date().toLocaleTimeString();
+        const lt = document.getElementById('lastSaveTime');
+        if (lt) lt.textContent = t;
+        // Update step 5 indicator
+        const ind = document.getElementById('evalAutosaveIndicator');
+        const txt = document.getElementById('evalAutosaveText');
+        if (ind) {
+            ind.classList.remove('d-none');
+            txt.textContent = 'Draft saved · ' + t;
+            ind.style.opacity = '1';
+            setTimeout(() => { ind.style.opacity = '0.4'; }, 2500);
+        }
+    } catch(e) {}
+}
 
-
-// Add initial dev plan rows if none exist
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.querySelectorAll('.dev-plan-row').length === 0) {
-        addDevPlan(); addDevPlan(); addDevPlan();
+function restoreEvalDraft(draft) {
+    // Step 1 fields
+    const empSel = document.getElementById('empSelect');
+    if (empSel && draft.employee_id) {
+        empSel.value = draft.employee_id;
+        empSel.dispatchEvent(new Event('change'));
     }
-});
+    const ps = document.querySelector('[name="period_start"]');
+    const pe = document.querySelector('[name="period_end"]');
+    if (ps) ps.value = draft.period_start;
+    if (pe) pe.value = draft.period_end;
+    const etRadio = document.querySelector(`[name="evaluation_type"][value="${draft.evaluation_type}"]`);
+    if (etRadio) etRadio.checked = true;
+
+    // Step 2: template
+    const tmplSel = document.getElementById('templateSelect');
+    if (tmplSel && draft.template_id) {
+        tmplSel.value = draft.template_id;
+        // Load criteria, then after load inject scores
+        loadCriteriaWithScores(draft.kraScores, draft.behScores);
+    }
+
+    // Step 5 fields (always available in DOM)
+    const suited = document.querySelector(`[name="career_growth_suited"][value="${draft.career_growth_suited}"]`);
+    if (suited) { suited.checked = true; toggleSuitedField(); }
+    const dp = document.querySelector('[name="desired_position"]');
+    if (dp) dp.value = draft.desired_position;
+    const sc = document.querySelector('[name="staff_comments"]');
+    if (sc) sc.value = draft.staff_comments;
+
+    // Dev plans - clear defaults and restore
+    const dpContainer = document.getElementById('devPlanContainer');
+    if (dpContainer && draft.devPlans && draft.devPlans.length) {
+        dpContainer.innerHTML = '';
+        draft.devPlans.forEach(p => addDevPlan(p.area, p.support, p.timeframe));
+    }
+
+    // Navigate to saved step
+    const targetStep = draft.currentStep || 1;
+    if (targetStep > 1) goToStep(targetStep);
+
+    // Show banner
+    const banner = document.getElementById('evalDraftBanner');
+    const ts = document.getElementById('evalDraftTimestamp');
+    if (banner && ts) {
+        const d = new Date(draft.savedAt);
+        ts.textContent = 'Last saved: ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString();
+        banner.classList.remove('d-none');
+    }
+}
+
+function loadCriteriaWithScores(kraScores, behScores) {
+    const templateId = document.getElementById('templateSelect')?.value;
+    if (!templateId) return;
+    const kraArea = document.getElementById('kraScoreArea');
+    const behArea = document.getElementById('behScoreArea');
+    if (kraArea) kraArea.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i></div>';
+    if (behArea) behArea.innerHTML = kraArea ? kraArea.innerHTML : '';
+
+    fetch('<?php echo BASE_URL; ?>/staff/get-criteria.php?template_id=' + templateId)
+        .then(r => r.json())
+        .then(data => {
+            templateWeights.kra = data.kra_weight || 80;
+            templateWeights.behavior = data.behavior_weight || 20;
+
+            if (data.kra && data.kra.length) {
+                let html = `<div class="p-2 border bg-light mb-3"><table class="table-official" id="kraTable">`;
+                html += `<thead><tr><th style="text-align:left;">I. KEY RESULT AREAS (${data.kra_weight}%)</th><th style="width:90px;">Weight</th><th style="width:110px;">Rating</th><th style="width:100px;">Total</th></tr></thead><tbody>`;
+                data.kra.forEach((c, i) => {
+                    const saved = kraScores[c.criterion_id] || '';
+                    html += `<tr>
+                        <td><div class="fw-bold">KRA ${i+1}: ${esc(c.criterion_name)}</div><div class="small text-muted">${esc(c.description)}</div></td>
+                        <td class="text-center fw-bold">${c.weight}%</td>
+                        <td><input type="number" class="form-control form-control-sm kra-score-input text-center fw-bold border-primary" name="kra_scores[${c.criterion_id}]" data-weight="${c.weight}" min="1" max="4" step="0.01" value="${esc(saved)}" required oninput="calculateAllScores()"></td>
+                        <td class="text-center fw-bold text-primary kra-total-cell" id="kraTotal_${c.criterion_id}">-</td>
+                    </tr>`;
+                });
+                html += `<tr class="bg-light fw-bold"><td class="text-end">SUB TOTAL</td><td class="text-center" id="kraWeightTotal">0%</td><td></td><td class="text-center text-primary" id="kraSubTotal">-</td></tr></tbody></table></div>`;
+                if (kraArea) kraArea.innerHTML = html;
+            }
+
+            if (data.behavior && data.behavior.length) {
+                let html = `<div class="p-2 border bg-light"><table class="table-official" id="behTable">`;
+                html += `<thead><tr><th style="text-align:left;">II. BEHAVIOR AND VALUES (${data.behavior_weight}%)</th><th>KPI Description</th><th style="width:110px;">Rating</th></tr></thead><tbody>`;
+                data.behavior.forEach((c, i) => {
+                    const saved = behScores[c.criterion_id] || '';
+                    html += `<tr>
+                        <td class="fw-bold text-nowrap">${i+1}. ${esc(c.criterion_name)}</td>
+                        <td class="small">${esc(c.kpi_description || c.description || '')}</td>
+                        <td><input type="number" class="form-control form-control-sm beh-score-input text-center fw-bold border-primary" name="beh_scores[${c.criterion_id}]" min="1" max="4" step="0.01" value="${esc(saved)}" required oninput="calculateAllScores()"></td>
+                    </tr>`;
+                });
+                html += `<tr class="bg-light fw-bold"><td colspan="2" class="text-end">AVERAGE</td><td class="text-center text-primary" id="behAverage">-</td></tr></tbody></table></div>`;
+                if (behArea) behArea.innerHTML = html;
+            }
+            calculateAllScores();
+        })
+        .catch(err => console.error('Draft restore: criteria load error', err));
+}
+
+function discardEvalDraft() {
+    localStorage.removeItem(EVAL_DRAFT_KEY);
+    document.getElementById('evalDraftBanner')?.classList.add('d-none');
+    // Reset form to fresh state
+    document.getElementById('empSelect').value = '';
+    document.getElementById('empSelect').dispatchEvent(new Event('change'));
+    document.querySelector('[name="period_start"]').value = '';
+    document.querySelector('[name="period_end"]').value = '';
+    const annualRadio = document.querySelector('[name="evaluation_type"][value="Annual"]');
+    if (annualRadio) annualRadio.checked = true;
+    document.getElementById('templateSelect').value = '';
+    document.getElementById('kraScoreArea').innerHTML = '';
+    document.getElementById('behScoreArea').innerHTML = '';
+    document.getElementById('devPlanContainer').innerHTML = '';
+    addDevPlan(); addDevPlan(); addDevPlan();
+    document.querySelector('[name="staff_comments"]').value = '';
+    const noRadio = document.querySelector('[name="career_growth_suited"][value="0"]');
+    if (noRadio) { noRadio.checked = true; toggleSuitedField(); }
+    document.getElementById('evalAutosaveIndicator')?.classList.add('d-none');
+    goToStep(1);
+}
+
+function clearEvalDraft() {
+    localStorage.removeItem(EVAL_DRAFT_KEY);
+}
+
+function initEvalDraft() {
+    const saved = localStorage.getItem(EVAL_DRAFT_KEY);
+    if (saved) {
+        try {
+            const draft = JSON.parse(saved);
+            restoreEvalDraft(draft);
+        } catch(e) {
+            localStorage.removeItem(EVAL_DRAFT_KEY);
+        }
+    }
+
+    // Attach auto-save listeners
+    const form = document.getElementById('evalForm');
+    if (form) {
+        form.addEventListener('input', () => {
+            clearTimeout(evalAutosaveTimer);
+            evalAutosaveTimer = setTimeout(saveEvalDraft, 2000);
+        });
+        form.addEventListener('change', () => {
+            clearTimeout(evalAutosaveTimer);
+            evalAutosaveTimer = setTimeout(saveEvalDraft, 2000);
+        });
+    }
+}
+
+// Track current step so it can be saved
+const _origGoToStep = goToStep;
+goToStep = function(step) {
+    currentEvalStep = step;
+    _origGoToStep(step);
+};
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

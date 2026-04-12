@@ -65,6 +65,18 @@ while ($row = $status_dist->fetch_assoc()) {
     $status_labels[] = $row['status'];
     $status_counts[] = (int) $row['count'];
 }
+
+// 3. Top Performers Data
+$top_performers = $conn->query("
+    SELECT ev.total_score, ev.performance_level,
+           CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.job_title, d.department_name
+    FROM evaluations ev
+    JOIN employees e ON ev.employee_id = e.employee_id
+    LEFT JOIN departments d ON e.department_id = d.department_id
+    WHERE ev.status = 'Approved'
+    ORDER BY ev.total_score DESC, ev.submitted_date DESC
+    LIMIT 5
+");
 ?>
 
 
@@ -392,7 +404,7 @@ while ($row = $status_dist->fetch_assoc()) {
 
 <div class="row g-4 mb-4">
     <!-- Performance Distribution -->
-    <div class="col-lg-6">
+    <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header">
                 <h5><i class="fas fa-chart-pie me-2"></i>Performance Distribution</h5>
@@ -405,11 +417,57 @@ while ($row = $status_dist->fetch_assoc()) {
         </div>
     </div>
 
-    <!-- Evaluation Status -->
-    <div class="col-lg-6">
+    <!-- Top Performers -->
+    <div class="col-lg-4">
         <div class="content-card h-100">
             <div class="card-header">
-                <h5><i class="fas fa-tasks me-2"></i>Evaluation Overview (By Status)</h5>
+                <h5><i class="fas fa-trophy text-warning me-2"></i>Top Performers</h5>
+            </div>
+            <div class="card-body p-0" style="height: 330px; overflow-y: auto;">
+                <?php if ($top_performers->num_rows === 0): ?>
+                    <div class="empty-state-card py-5">
+                        <i class="fas fa-medal text-muted" style="opacity: 0.1; font-size: 3rem;"></i>
+                        <p class="mb-0 mt-3 small">No approved evaluations yet.</p>
+                    </div>
+                <?php else: ?>
+                    <div class="list-group list-group-flush pt-2">
+                        <?php 
+                        $rank = 1;
+                        while ($tp = $top_performers->fetch_assoc()): 
+                            $medal_color = ($rank == 1) ? '#ffd700' : (($rank == 2) ? '#c0c0c0' : (($rank == 3) ? '#cd7f32' : '#adb5bd'));
+                            // Fallback rendering for avatar initials safely
+                            $names = explode(' ', $tp['employee_name']);
+                            $fn = isset($names[0]) ? substr($names[0], 0, 1) : '';
+                            $ln = isset($names[1]) ? substr($names[1], 0, 1) : substr($names[0], 1, 1);
+                            $initials = strtoupper($fn . $ln);
+                        ?>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 border-0 border-bottom border-light" style="background: transparent;">
+                                <div class="d-flex align-items-center gap-3 w-100">
+                                    <div class="fw-bold" style="color: <?php echo $medal_color; ?>; width: 22px; text-align: center;">#<?php echo $rank; ?></div>
+                                    <div style="width: 38px; height: 38px; border-radius: 50%; font-size: 0.85rem; background: rgba(13, 110, 253, 0.08); display:flex; align-items:center; justify-content:center; color: var(--primary-blue); font-weight: 800; flex-shrink: 0;">
+                                        <?php echo $initials; ?>
+                                    </div>
+                                    <div style="min-width: 0; flex: 1;">
+                                        <h6 class="mb-0 fw-bold text-truncate" style="font-size: 0.9rem;"><?php echo e($tp['employee_name']); ?></h6>
+                                        <small class="text-muted d-block text-truncate" style="font-size: 0.75rem;"><?php echo e($tp['job_title']); ?> &bull; <?php echo e($tp['department_name'] ?? 'N/A'); ?></small>
+                                    </div>
+                                    <div class="text-end ps-2">
+                                        <div class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.8rem; box-shadow: 0 2px 4px rgba(25, 135, 84, 0.2);"><?php echo $tp['total_score']; ?>%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php $rank++; endwhile; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Status -->
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks me-2"></i>Status Overview</h5>
             </div>
             <div class="card-body">
                 <div class="chart-container" style="height:300px;">

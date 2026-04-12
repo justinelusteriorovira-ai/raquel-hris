@@ -279,27 +279,25 @@ foreach ($all_subs as $sub):
                     </div>
 
                     <!-- Career Growth -->
-                    <?php if(!empty($sub['desired_position']) || !empty($sub['career_growth_details'])): ?>
+                    <?php $cg_suited = !empty($sub['career_growth_suited']) ? 1 : (!empty($sub['desired_position']) ? 1 : 0); ?>
                     <div class="section-premium-label mb-3 mt-5">
                         <i class="fas fa-chart-line"></i> III. Career Growth
                     </div>
                     <div class="p-3 bg-light rounded-3 mb-4 border-start border-4 border-info">
-                        <div class="row align-items-center">
-                            <div class="col-sm-6">
-                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Position</small>
-                                <div class="fw-bold text-primary" style="font-size: 1.1rem;"><?php echo e($sub['desired_position'] ?? 'N/A'); ?></div>
-                            </div>
-                            <div class="col-sm-6 text-sm-end">
-                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Date</small>
-                                <div class="fw-bold"><?php echo $sub['target_date'] ? formatDate($sub['target_date']) : 'N/A'; ?></div>
-                            </div>
+                        <div class="mb-2 fw-semibold" style="font-size:0.9rem;">
+                            Is the employee better suited for another job within the company?
+                            <span class="badge ms-2 <?php echo $cg_suited ? 'bg-success' : 'bg-secondary'; ?>">
+                                <?php echo $cg_suited ? '&#9745; Yes' : '&#9744; No'; ?>
+                            </span>
                         </div>
-                        <?php if(!empty($sub['career_growth_details'])): ?>
-                            <hr class="my-3 opacity-25">
-                            <div class="x-small text-muted"><span class="fw-bold">Notes:</span> <?php echo e($sub['career_growth_details']); ?></div>
+                        <?php if ($cg_suited && !empty($sub['desired_position'])): ?>
+                        <div class="small text-muted mt-1">
+                            <i class="fas fa-briefcase me-1 text-info"></i>
+                            <strong>Job Function / Department:</strong>
+                            <span class="text-dark fw-semibold ms-1"><?php echo e($sub['desired_position']); ?></span>
+                        </div>
                         <?php endif; ?>
                     </div>
-                    <?php endif; ?>
 
                     <!-- Developmental Plan -->
                     <div class="section-premium-label mb-3 mt-5">

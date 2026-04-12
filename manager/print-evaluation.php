@@ -242,8 +242,13 @@ if ($_SESSION['role'] === 'HR Staff' && $row['submitted_by'] != $_SESSION['user_
       </td>
       <td style="border-right:1px solid #000; padding:4px 6px; font-size:10px; vertical-align:top;">
         Please check one (1):<br>
-        ☐ Initial &nbsp;&nbsp;&nbsp; ☐ Final<br>
-        ☐ Quarterly &nbsp; ☑ Annual
+        <div style="padding-left: 45px; margin-top: 4px; line-height: 1.4;">
+          <?php $et = $row['evaluation_type'] ?? 'Annual'; ?>
+          <?php echo ($et === 'Initial') ? '&#9745;' : '&#9744;'; ?> Initial &nbsp;&nbsp; 
+          <?php echo ($et === 'Final') ? '&#9745;' : '&#9744;'; ?> Final<br>
+          <?php echo ($et === 'Quarterly') ? '&#9745;' : '&#9744;'; ?> Quarterly &nbsp;&nbsp; 
+          <?php echo ($et === 'Annual') ? '&#9745;' : '&#9744;'; ?> Annual
+        </div>
       </td>
       <td style="padding:4px 6px; font-size:10px; vertical-align:top;">
         Department/Branch:<br>
@@ -448,17 +453,21 @@ if ($_SESSION['role'] === 'HR Staff' && $row['submitted_by'] != $_SESSION['user_
   <div style="font-weight:bold; font-size:12px; text-align:center; padding:6px 0 2px;">CAREER GROWTH</div>
   <div style="border:1px solid #000; padding:6px 8px; font-size:10px; margin-bottom:8px;">
     Is the employee better suited for another job within the company? &nbsp; 
-    <?php $suited = !empty($row['desired_position']) ? 'Yes' : 'No'; ?>
-    <?php echo ($suited == 'Yes') ? '☑' : '☐'; ?> Yes &nbsp;&nbsp; <?php echo ($suited == 'No') ? '☑' : '☐'; ?> No<br>
-    If yes, specify the job function / department: <span style="display:inline-block; border-bottom:1px solid #000; width:300px; margin-left:4px;"><?php echo e($row['desired_position'] ?? ''); ?></span>
+    <?php $suited = !empty($row['career_growth_suited']) ? 1 : (!empty($row['desired_position']) ? 1 : 0); ?>
+    <?php echo ($suited == 1) ? '&#9745;' : '&#9744;'; ?> Yes &nbsp;&nbsp; <?php echo ($suited == 0) ? '&#9745;' : '&#9744;'; ?> No<br>
+    If yes, specify the job function / department: <span style="display:inline-block; border-bottom:1px solid #000; min-width:300px; margin-left:4px;"><?php echo ($suited == 1) ? e($row['desired_position'] ?? '') : ''; ?></span>
   </div>
 
   <!-- Employee's Comments -->
   <div class="comment-box">
     <div class="label">Employee's Comments:</div>
     <div class="content"><?php echo nl2br(e($row['staff_comments'])); ?></div>
-    <div style="text-align:center; padding-bottom:4px;">
-      <div style="display:inline-block; border-top:1px solid #000; width:200px; padding-top:2px; font-style:italic; font-size:9px;">Signature over Printed Name</div>
+    <div style="text-align:center; padding-bottom:4px; margin-top:20px;">
+      <div style="display:inline-block; border-bottom:1px solid #000; width:200px; margin-bottom:2px; font-weight:bold; font-size:11px;">
+        <?php echo strtoupper(e($row['submitted_by_name'] ?? '')); ?>
+      </div>
+      <br>
+      <div style="display:inline-block; font-style:italic; font-size:9px;">Signature over Printed Name</div>
     </div>
   </div>
 
@@ -466,8 +475,12 @@ if ($_SESSION['role'] === 'HR Staff' && $row['submitted_by'] != $_SESSION['user_
   <div class="comment-box">
     <div class="label">Evaluator's Comments:</div>
     <div class="content"><?php echo nl2br(e($row['supervisor_comments'])); ?></div>
-    <div style="text-align:center; padding-bottom:4px;">
-      <div style="display:inline-block; border-top:1px solid #000; width:200px; padding-top:2px; font-style:italic; font-size:9px;">Signature over Printed Name</div>
+    <div style="text-align:center; padding-bottom:4px; margin-top:20px;">
+      <div style="display:inline-block; border-bottom:1px solid #000; width:200px; margin-bottom:2px; font-weight:bold; font-size:11px;">
+        <?php echo strtoupper(e($row['endorsed_by_name'] ?? '')); ?>
+      </div>
+      <br>
+      <div style="display:inline-block; font-style:italic; font-size:9px;">Signature over Printed Name</div>
     </div>
   </div>
 

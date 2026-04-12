@@ -102,6 +102,28 @@ require_once '../includes/header.php';
     </a>
 </div>
 
+<!-- Draft Restored Banner (hidden by default, shown by JS) -->
+<div id="draftRestoredBanner" class="alert mb-4 d-none" role="alert"
+    style="background: linear-gradient(135deg,#fff8e1,#fff3e0); border:1.5px solid #ffa000; border-radius:12px;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-history fa-lg text-warning"></i>
+            <div>
+                <div class="fw-bold text-dark">Draft Restored</div>
+                <div class="small text-muted" id="draftTimestamp"></div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="discardDraft()">
+                <i class="fas fa-trash me-1"></i>Discard Draft
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="document.getElementById('draftRestoredBanner').classList.add('d-none')">
+                <i class="fas fa-times me-1"></i>Dismiss
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Setup Guide Alert -->
 <div class="alert alert-info border-info shadow-sm mb-4 d-flex align-items-center" role="alert">
     <i class="fas fa-info-circle fa-2x me-3 text-info"></i>
@@ -260,11 +282,17 @@ require_once '../includes/header.php';
 <div class="content-card mb-4 border-0 shadow-sm bg-light">
     <div class="card-body p-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-            <a href="<?php echo BASE_URL; ?>/manager/templates.php" class="btn btn-outline-secondary rounded-pill px-4">
-                <i class="fas fa-arrow-left me-2"></i>Cancel
-            </a>
-            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow" id="submitBtn">
-                <i class="fas fa-save me-2"></i>Finalize & Create Template
+            <div class="d-flex align-items-center gap-3">
+                <a href="<?php echo BASE_URL; ?>/manager/templates.php" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-arrow-left me-2"></i>Cancel
+                </a>
+                <span id="autosaveIndicator" class="text-muted small d-none" style="transition:opacity 0.5s;">
+                    <i class="fas fa-cloud me-1 text-success"></i><span id="autosaveText">Draft saved</span>
+                </span>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 shadow" id="submitBtn"
+                onclick="clearDraftOnSubmit()">
+                <i class="fas fa-save me-2"></i>Finalize &amp; Create Template
             </button>
         </div>
     </div>
@@ -423,12 +451,163 @@ function escAttr(str) {
     return div.innerHTML.replace(/"/g, '&quot;');
 }
 
-// Initialize with 3 KRA rows and all 8 default behavior items
-document.addEventListener('DOMContentLoaded', function() {
-    addKRA('', '', '');
-    addKRA('', '', '');
-    addKRA('', '', '');
+// ============================================================
+// AUTO-SAVE / DRAFT PERSISTENCE (localStorage)
+// ============================================================
+const DRAFT_KEY = 'hris_template_draft';
+let autosaveTimer = null;
+
+function collectDraft() {
+    const kras = [];
+    document.querySelectorAll('#kraContainer .kra-criterion-row').forEach(row => {
+        kras.push({
+            name: row.querySelector('input[name="kra_name[]"]')?.value || '',
+            desc: row.querySelector('input[name="kra_description[]"]')?.value || '',
+            weight: row.querySelector('input[name="kra_weight_item[]"]')?.value || ''
+        });
+    });
+
+    const behaviors = [];
+    document.querySelectorAll('#behaviorContainer .behavior-criterion-row').forEach(row => {
+        behaviors.push({
+            name: row.querySelector('input[name="behavior_name[]"]')?.value || '',
+            kpi: row.querySelector('input[name="behavior_kpi[]"]')?.value || ''
+        });
+    });
+
+    return {
+        template_name: document.querySelector('[name="template_name"]')?.value || '',
+        description: document.querySelector('[name="description"]')?.value || '',
+        target_position: document.querySelector('[name="target_position"]')?.value || '',
+        evaluation_type: document.querySelector('[name="evaluation_type"]')?.value || '',
+        kra_weight: document.getElementById('kraWeight')?.value || '80',
+        behavior_weight: document.getElementById('behaviorWeight')?.value || '20',
+        form_code: document.querySelector('[name="form_code"]')?.value || '',
+        revision_date: document.querySelector('[name="revision_date"]')?.value || '',
+        effective_date_form: document.querySelector('[name="effective_date_form"]')?.value || '',
+        kras,
+        behaviors,
+        savedAt: new Date().toISOString()
+    };
+}
+
+function saveDraft() {
+    try {
+        const draft = collectDraft();
+        // Only save if something meaningful has been entered
+        const hasContent = draft.template_name || draft.kras.some(k => k.name) || draft.behaviors.some(b => b.name !== (defaultBehaviors.find(d => d.name === b.name)?.name || ''));
+        if (!hasContent) return;
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        // Show autosave indicator
+        const indicator = document.getElementById('autosaveIndicator');
+        const txt = document.getElementById('autosaveText');
+        if (indicator) {
+            indicator.classList.remove('d-none');
+            txt.textContent = 'Draft saved · ' + new Date().toLocaleTimeString();
+            indicator.style.opacity = '1';
+            setTimeout(() => { indicator.style.opacity = '0.5'; }, 2000);
+        }
+    } catch(e) {}
+}
+
+function restoreDraft(draft) {
+    // Template Info
+    const setVal = (sel, val) => { const el = document.querySelector(sel); if (el) el.value = val; };
+    setVal('[name="template_name"]', draft.template_name);
+    setVal('[name="description"]', draft.description);
+    setVal('[name="target_position"]', draft.target_position);
+    setVal('[name="evaluation_type"]', draft.evaluation_type);
+    setVal('[name="form_code"]', draft.form_code);
+    setVal('[name="revision_date"]', draft.revision_date);
+    setVal('[name="effective_date_form"]', draft.effective_date_form);
+
+    // Weight split
+    const kw = document.getElementById('kraWeight');
+    const bw = document.getElementById('behaviorWeight');
+    if (kw) kw.value = draft.kra_weight;
+    if (bw) bw.value = draft.behavior_weight;
+    updateWeightSplit();
+
+    // KRA rows — clear defaults, restore saved
+    document.getElementById('kraContainer').innerHTML = '';
+    kraCount = 0;
+    if (draft.kras && draft.kras.length) {
+        draft.kras.forEach(k => addKRA(k.name, k.desc, k.weight));
+    } else {
+        addKRA('', '', ''); addKRA('', '', ''); addKRA('', '', '');
+    }
+
+    // Behavior rows — clear defaults, restore saved
+    document.getElementById('behaviorContainer').innerHTML = '';
+    behaviorCount = 0;
+    if (draft.behaviors && draft.behaviors.length) {
+        draft.behaviors.forEach(b => addBehavior(b.name, b.kpi));
+    } else {
+        defaultBehaviors.forEach(b => addBehavior(b.name, b.kpi));
+    }
+
+    // Show banner
+    const banner = document.getElementById('draftRestoredBanner');
+    const ts = document.getElementById('draftTimestamp');
+    if (banner && ts) {
+        const d = new Date(draft.savedAt);
+        ts.textContent = 'Last saved: ' + d.toLocaleDateString() + ' at ' + d.toLocaleTimeString();
+        banner.classList.remove('d-none');
+    }
+}
+
+function discardDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    document.getElementById('draftRestoredBanner').classList.add('d-none');
+    // Reset to defaults
+    document.getElementById('kraContainer').innerHTML = '';
+    document.getElementById('behaviorContainer').innerHTML = '';
+    kraCount = 0; behaviorCount = 0;
+    document.querySelector('[name="template_name"]').value = '';
+    document.querySelector('[name="description"]').value = '';
+    document.querySelector('[name="form_code"]').value = '';
+    document.querySelector('[name="revision_date"]').value = '';
+    document.querySelector('[name="effective_date_form"]').value = '';
+    addKRA('', '', ''); addKRA('', '', ''); addKRA('', '', '');
     defaultBehaviors.forEach(b => addBehavior(b.name, b.kpi));
+    document.getElementById('autosaveIndicator')?.classList.add('d-none');
+}
+
+function clearDraftOnSubmit() {
+    localStorage.removeItem(DRAFT_KEY);
+}
+
+// Hook auto-save on any input/change inside the form
+function attachAutosaveListeners() {
+    const form = document.getElementById('templateForm');
+    if (!form) return;
+    form.addEventListener('input', () => {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(saveDraft, 2000);
+    });
+    form.addEventListener('change', () => {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(saveDraft, 2000);
+    });
+}
+
+// Initialize with 3 KRA rows and all 8 default behavior items, then check for draft
+document.addEventListener('DOMContentLoaded', function() {
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if (saved) {
+        try {
+            const draft = JSON.parse(saved);
+            restoreDraft(draft);
+        } catch(e) {
+            localStorage.removeItem(DRAFT_KEY);
+            addKRA('', '', ''); addKRA('', '', ''); addKRA('', '', '');
+            defaultBehaviors.forEach(b => addBehavior(b.name, b.kpi));
+        }
+    } else {
+        addKRA('', '', ''); addKRA('', '', ''); addKRA('', '', '');
+        defaultBehaviors.forEach(b => addBehavior(b.name, b.kpi));
+    }
+    attachAutosaveListeners();
 });
 </script>
 

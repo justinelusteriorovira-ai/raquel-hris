@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $eval_info = $eval_info_q->get_result()->fetch_assoc();
         $eval_info_q->close();
 
-        // 3. Automatically create a Career Movement record if a Desired Position is set
-        if (!empty($eval_info['desired_position'])) {
+        // 3. Automatically create a Career Movement record if employee is marked as suited for another job
+        if (!empty($eval_info['career_growth_suited']) && !empty($eval_info['desired_position'])) {
             $move_stmt = $conn->prepare("INSERT INTO career_movements 
                 (employee_id, movement_type, previous_position, new_position, previous_branch_id, new_branch_id, effective_date, reason, approval_status, approved_by, logged_by, is_applied) 
                 VALUES (?, 'Role Change', ?, ?, ?, ?, ?, ?, 'Approved', ?, ?, 0)");
@@ -484,23 +484,25 @@ foreach ($all_pending as $row):
                     </div>
 
                     <!-- Career Growth -->
-                    <?php if(!empty($row['desired_position'])): ?>
+                    <?php $cg_suited = !empty($row['career_growth_suited']) ? 1 : (!empty($row['desired_position']) ? 1 : 0); ?>
                     <div class="section-premium-label mb-3 mt-5">
                         <i class="fas fa-chart-line"></i> III. Career Growth
                     </div>
                     <div class="p-3 bg-light rounded-3 mb-4 border-start border-4 border-info">
-                        <div class="row align-items-center">
-                            <div class="col-sm-6">
-                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Position</small>
-                                <div class="fw-bold text-primary" style="font-size: 1.1rem;"><?php echo e($row['desired_position']); ?></div>
-                            </div>
-                            <div class="col-sm-6 text-sm-end">
-                                <small class="text-uppercase text-muted fw-bold d-block mb-1">Target Date</small>
-                                <div class="fw-bold"><?php echo $row['target_date'] ? formatDate($row['target_date']) : 'N/A'; ?></div>
-                            </div>
+                        <div class="mb-2 fw-semibold" style="font-size:0.9rem;">
+                            Is the employee better suited for another job within the company?
+                            <span class="badge ms-2 <?php echo $cg_suited ? 'bg-success' : 'bg-secondary'; ?>">
+                                <?php echo $cg_suited ? '&#9745; Yes' : '&#9744; No'; ?>
+                            </span>
                         </div>
+                        <?php if ($cg_suited && !empty($row['desired_position'])): ?>
+                        <div class="small text-muted mt-1">
+                            <i class="fas fa-briefcase me-1 text-info"></i>
+                            <strong>Job Function / Department:</strong>
+                            <span class="text-dark fw-semibold ms-1"><?php echo e($row['desired_position']); ?></span>
+                        </div>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
 
                     <!-- Remarks -->
                     <div class="section-premium-label mb-3 mt-5">
