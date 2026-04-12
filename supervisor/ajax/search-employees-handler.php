@@ -5,7 +5,7 @@ require_once '../../includes/functions.php';
 
 header('Content-Type: application/json');
 
-$branch_id = $_SESSION['branch_id'];
+$branch_id = $_SESSION['branch_id'] ?? 0;
 $search = trim($_GET['search'] ?? '');
 $dept = trim($_GET['department'] ?? '');
 $status = trim($_GET['status'] ?? '');
@@ -16,10 +16,10 @@ $query = "SELECT e.*, b.branch_name, d.department_name
           FROM employees e 
           LEFT JOIN branches b ON e.branch_id = b.branch_id 
           LEFT JOIN departments d ON e.department_id = d.department_id
-          WHERE e.branch_id = $branch_id AND e.is_active = 1";
+          WHERE e.branch_id = ? AND e.is_active = 1";
 
-$params = [];
-$types = "";
+$params = [$branch_id];
+$types = "i";
 
 if (!empty($search)) {
     $query .= " AND (e.first_name LIKE ? OR e.last_name LIKE ? OR e.employee_id LIKE ?)";
@@ -71,6 +71,16 @@ foreach ($employees as &$emp) {
     $emp['full_name'] = $emp['last_name'] . ', ' . $emp['first_name'];
     $emp['hire_date_fmt'] = formatDate($emp['hire_date']);
     $emp['base_url'] = BASE_URL;
+
+    if (!empty($emp['profile_picture'])) {
+        if (strpos($emp['profile_picture'], 'assets/') === 0) {
+            $emp['pic_url'] = BASE_URL . '/' . $emp['profile_picture'];
+        } else {
+            $emp['pic_url'] = BASE_URL . '/assets/img/employees/' . $emp['profile_picture'];
+        }
+    } else {
+        $emp['pic_url'] = null;
+    }
 }
 
 echo json_encode($employees);

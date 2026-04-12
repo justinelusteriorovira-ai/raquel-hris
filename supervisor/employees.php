@@ -6,15 +6,19 @@ require_once '../includes/functions.php';
 require_once '../includes/header.php';
 
 // Fetch employees in the supervisor's branch
-$branch_id = $_SESSION['branch_id'];
-$employees = $conn->query("
+$branch_id = $_SESSION['branch_id'] ?? 0;
+$stmt = $conn->prepare("
     SELECT e.*, b.branch_name, d.department_name 
     FROM employees e 
     LEFT JOIN branches b ON e.branch_id = b.branch_id 
     LEFT JOIN departments d ON e.department_id = d.department_id 
-    WHERE e.branch_id = $branch_id AND e.is_active = 1 
+    WHERE e.branch_id = ? AND e.is_active = 1 
     ORDER BY e.last_name, e.first_name
 ");
+$stmt->bind_param("i", $branch_id);
+$stmt->execute();
+$employees = $stmt->get_result();
+$stmt->close();
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">

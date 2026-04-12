@@ -142,8 +142,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="user-avatar-sm me-3 bg-secondary-subtle rounded-circle d-flex align-items-center justify-content-center text-secondary fw-bold" style="width:40px; height:40px;">
-                                        ${emp.profile_picture ? 
-                                            `<img src="${emp.base_url}/assets/img/employees/${emp.profile_picture}" class="rounded-circle" style="width:100%; height:100%; object-fit:cover;">` : 
+                                        ${emp.pic_url ? 
+                                            `<img src="${emp.pic_url}" class="rounded-circle" style="width:100%; height:100%; object-fit:cover;">` : 
                                             emp.first_name.charAt(0) + emp.last_name.charAt(0)}
                                     </div>
                                     <div>

@@ -139,19 +139,19 @@ $total_pending_all = $pending_count + $cm_count;
 
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="content-card text-center p-3 h-100 border-start border-4 border-primary shadow-sm glass-card">
+        <div class="chart-card fadeup text-center p-3 h-100 border-start border-4 border-primary shadow-sm glass-card">
             <div class="display-6 fw-bold text-primary"><?php echo $total_pending_all; ?></div>
             <div class="text-muted small fw-bold text-uppercase">Total Pending Actions</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="content-card text-center p-3 h-100 border-start border-4 border-success shadow-sm">
+        <div class="chart-card fadeup text-center p-3 h-100 border-start border-4 border-success shadow-sm">
             <div class="display-6 fw-bold text-success"><?php echo $finalized_count; ?></div>
             <div class="text-muted small fw-bold text-uppercase">Total Finalized</div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="content-card p-3 h-100 bg-light border-0 shadow-sm d-flex flex-column justify-content-center">
+        <div class="chart-card fadeup p-3 h-100 bg-light border-0 shadow-sm d-flex flex-column justify-content-center">
             <div class="small text-muted mb-1 italic"><i class="fas fa-info-circle me-1"></i>Quick Tip</div>
             <div class="x-small text-muted">Approved evaluations with growth aspirations automatically create career movement records for tracking.</div>
         </div>

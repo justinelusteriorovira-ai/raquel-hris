@@ -202,8 +202,8 @@ $statuses = ['Regular', 'Probationary', 'Contractual'];
     </a>
 </div>
 
-<div class="content-card">
-    <div class="card-header">
+<div class="chart-card fadeup">
+    <div class="cc-header">
         <h5><i class="fas fa-users me-2"></i>All Employees</h5>
         <div class="search-box">
             <i class="fas fa-search search-icon"></i>
@@ -259,7 +259,7 @@ $statuses = ['Regular', 'Probationary', 'Contractual'];
             <i class="fas fa-times me-1"></i>Clear All
         </button>
     </div>
-    <div class="card-body p-0">
+    <div class="cc-body p-0">
         <div class="table-responsive">
             <table class="table table-hover" id="empTable">
                 <thead>

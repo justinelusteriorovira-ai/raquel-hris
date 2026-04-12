@@ -291,97 +291,121 @@ while ($row = $branch_q->fetch_assoc()) {
     }
 </style>
 
-<!-- Statistics Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
-            <div class="stat-info">
-                <h3>
-                    <?php echo $total_employees; ?>
-                </h3>
-                <p>Total Employees</p>
-            </div>
+<!-- Statistics Cards (Premium Hero) -->
+<div class="page-hero fadeup">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+        <div>
+            <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.55);">HR Manager · Dashboard</div>
+            <h4 class="text-white fw-bold mb-0 mt-1"><i class="fas fa-tachometer-alt me-2" style="color:#BD9414;"></i>System Overview</h4>
+        </div>
+        <div style="color:rgba(255,255,255,.6);font-size:.8rem;">
+            <i class="fas fa-sync-alt me-1"></i>Data as of <?php echo date('F d, Y'); ?>
         </div>
     </div>
 
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon info"><i class="fas fa-mars"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $male_count; ?></h3>
-                <p>Male Employees</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon purple" style="background: rgba(232, 62, 140, 0.1); color: #e83e8c;"><i
-                    class="fas fa-venus"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $female_count; ?></h3>
-                <p>Female Employees</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $pending_evals; ?></h3>
-                <p>Pending Evaluations</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon purple"><i class="fas fa-exchange-alt"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $pending_movements; ?></h3>
-                <p>Pending Movements</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon green"><i class="fas fa-star"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $avg_score; ?>%</h3>
-                <p>Average Score</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <div class="stat-card">
-            <div class="stat-icon info"><i class="fas fa-file-alt"></i></div>
-            <div class="stat-info">
-                <h3><?php echo $new_evals_month; ?></h3>
-                <p>New Evals This Month</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3 col-lg-4 col-md-6">
-        <a href="branches.php" class="text-decoration-none border-0 p-0 m-0 w-100">
+    <div class="row g-3">
+        <div class="col-6 col-md-3">
             <div class="stat-card">
-                <div class="stat-icon blue"><i class="fas fa-building"></i></div>
-                <div class="stat-info">
-                    <h3><?php echo $total_branches; ?></h3>
-                    <p>Total Branches</p>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $total_employees; ?></div>
+                        <div class="stat-label">Total Employees</div>
+                    </div>
+                    <i class="fas fa-users stat-icon text-white-50"></i>
                 </div>
             </div>
-        </a>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $male_count; ?></div>
+                        <div class="stat-label">Male Employees</div>
+                    </div>
+                    <i class="fas fa-mars stat-icon" style="color:#17a2b8;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $female_count; ?></div>
+                        <div class="stat-label">Female Employees</div>
+                    </div>
+                    <i class="fas fa-venus stat-icon" style="color:#e83e8c;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <a href="branches.php" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-value"><?php echo $total_branches; ?></div>
+                            <div class="stat-label">Total Branches</div>
+                        </div>
+                        <i class="fas fa-building stat-icon text-white-50"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $pending_evals; ?></div>
+                        <div class="stat-label">Pending Evals</div>
+                    </div>
+                    <i class="fas fa-clock stat-icon" style="color:#ffc107;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $pending_movements; ?></div>
+                        <div class="stat-label">Pending Movements</div>
+                    </div>
+                    <i class="fas fa-exchange-alt stat-icon" style="color:#17a2b8;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $new_evals_month; ?></div>
+                        <div class="stat-label">Evals This Month</div>
+                    </div>
+                    <i class="fas fa-file-alt stat-icon text-white-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="stat-value"><?php echo $avg_score; ?>%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <i class="fas fa-star stat-icon" style="color:#28a745;"></i>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- Branch Distribution Insights (Professional Section) -->
 <div class="row g-4 mb-4 branch-insights-section">
     <div class="col-lg-4">
-        <div class="content-card h-100">
-            <div class="card-header">
+        <div class="chart-card h-100">
+            <div class="cc-header">
                 <h5><i class="fas fa-map-marker-alt me-2"></i>Select Branch</h5>
             </div>
-            <div class="card-body">
+            <div class="cc-body">
                 <p class="text-muted small mb-3">Choose a location to view detailed workforce distribution.</p>
 
                 <div id="branchSelector">
@@ -462,11 +486,11 @@ while ($row = $branch_q->fetch_assoc()) {
 <div class="row g-4 mb-4">
     <!-- Performance Distribution -->
     <div class="col-lg-4">
-        <div class="content-card h-100">
-            <div class="card-header">
+        <div class="chart-card h-100">
+            <div class="cc-header">
                 <h5><i class="fas fa-chart-pie me-2"></i>Performance Distribution</h5>
             </div>
-            <div class="card-body">
+            <div class="cc-body">
                 <div class="chart-container" style="height:300px;">
                     <canvas id="perfPieChart"></canvas>
                 </div>
@@ -476,8 +500,8 @@ while ($row = $branch_q->fetch_assoc()) {
 
     <!-- Top Performers -->
     <div class="col-lg-4">
-        <div class="content-card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="chart-card h-100">
+            <div class="cc-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-trophy text-warning me-2"></i>Top Performers</h5>
                 <select id="topPerformerBranchFilter" class="form-select form-select-sm" style="width: 150px; font-size: 0.75rem; border-radius: 20px; border-color: #eee;">
                     <option value="">All Branches</option>
@@ -486,7 +510,7 @@ while ($row = $branch_q->fetch_assoc()) {
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="card-body p-0" style="height: 330px; overflow-y: auto;" id="topPerformerContainer">
+            <div class="cc-body p-0" style="height: 330px; overflow-y: auto;" id="topPerformerContainer">
                 <?php if ($top_performers->num_rows === 0): ?>
                     <div class="empty-state-card py-5">
                         <i class="fas fa-medal text-muted" style="opacity: 0.1; font-size: 3rem;"></i>
@@ -532,11 +556,11 @@ while ($row = $branch_q->fetch_assoc()) {
 
     <!-- Evaluation Status -->
     <div class="col-lg-4">
-        <div class="content-card h-100">
-            <div class="card-header">
+        <div class="chart-card h-100">
+            <div class="cc-header">
                 <h5><i class="fas fa-tasks me-2"></i>Status Overview</h5>
             </div>
-            <div class="card-body">
+            <div class="cc-body">
                 <div class="chart-container" style="height:300px;">
                     <canvas id="statusDonutChart"></canvas>
                 </div>
@@ -548,12 +572,12 @@ while ($row = $branch_q->fetch_assoc()) {
 <!-- COMPREHENSIVE GRAPHS ROW -->
 <div class="row g-4 mb-4">
     <div class="col-lg-7">
-        <div class="content-card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="chart-card h-100">
+            <div class="cc-header d-flex justify-content-between align-items-center">
                 <h5><i class="fas fa-chart-line me-2 text-primary"></i>Performance Trends</h5>
                 <span class="badge bg-light text-dark fw-normal" style="font-size: 0.7rem;">Average Score (Last 6 Months)</span>
             </div>
-            <div class="card-body">
+            <div class="cc-body">
                 <div style="height: 300px;">
                     <canvas id="trendLineChart"></canvas>
                 </div>
@@ -561,11 +585,11 @@ while ($row = $branch_q->fetch_assoc()) {
         </div>
     </div>
     <div class="col-lg-5">
-        <div class="content-card h-100">
-            <div class="card-header">
+        <div class="chart-card h-100">
+            <div class="cc-header">
                 <h5><i class="fas fa-chart-bar me-2 text-info"></i>Branch Comparison</h5>
             </div>
-            <div class="card-body">
+            <div class="cc-body">
                 <span class="chart-label-premium">Top 10 Performing Branches (Avg %)</span>
                 <div style="height: 270px;">
                     <canvas id="branchComparisonChart"></canvas>
@@ -578,8 +602,8 @@ while ($row = $branch_q->fetch_assoc()) {
 <!-- PERFORMANCE DISTRIBUTION TABLE ROW -->
 <div class="row g-4 mb-4">
     <div class="col-12">
-        <div class="content-card">
-            <div class="card-header d-flex justify-content-between align-items-center py-3">
+        <div class="chart-card">
+            <div class="cc-header d-flex justify-content-between align-items-center py-3">
                 <h5 class="mb-0"><i class="fas fa-th-list me-2 text-success"></i>Performance Distribution Directory</h5>
                 <div class="d-flex gap-2 filter-group">
                     <button class="perf-filter-btn outstanding active" onclick="filterDistribution('Outstanding', this)">Outstanding</button>
@@ -588,7 +612,7 @@ while ($row = $branch_q->fetch_assoc()) {
                     <button class="perf-filter-btn needs" onclick="filterDistribution('Needs Improvement', this)">Needs Imp.</button>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="cc-body p-0">
                 <div class="table-responsive" style="max-height: 400px;">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light sticky-top">
@@ -613,9 +637,9 @@ while ($row = $branch_q->fetch_assoc()) {
 <div class="row">
     <!-- Pending Approvals -->
     <div class="col-12">
-        <div class="content-card">
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <ul class="nav nav-tabs card-header-tabs approval-tabs" id="pendingTabs" role="tablist">
+        <div class="chart-card">
+            <div class="cc-header d-flex justify-content-between align-items-center py-2">
+                <ul class="nav nav-tabs cc-header-tabs approval-tabs" id="pendingTabs" role="tablist">
                     <li class="nav-item">
                         <button class="nav-link active" id="eval-tab" data-bs-toggle="tab" data-bs-target="#evals"
                             type="button" role="tab">
@@ -639,7 +663,7 @@ while ($row = $branch_q->fetch_assoc()) {
                     View Center <i class="fas fa-external-link-alt ms-1" style="font-size: 0.7rem;"></i>
                 </a>
             </div>
-            <div class="card-body p-0">
+            <div class="cc-body p-0">
                 <div class="tab-content" id="pendingTabsContent">
                     <!-- Evaluations Tab -->
                     <div class="tab-pane fade show active" id="evals" role="tabpanel">

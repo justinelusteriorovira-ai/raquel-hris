@@ -100,15 +100,15 @@ $departments = $conn->query("
     </div>
 </div>
 
-<div class="content-card">
-    <div class="card-header">
+<div class="chart-card fadeup">
+    <div class="cc-header">
         <h5><i class="fas fa-sitemap me-2"></i>All Departments</h5>
         <div class="search-box">
             <i class="fas fa-search search-icon"></i>
             <input type="text" class="form-control form-control-sm" id="searchDept" placeholder="Search departments...">
         </div>
     </div>
-    <div class="card-body p-0">
+    <div class="cc-body p-0">
         <div class="table-responsive">
             <table class="table table-hover" id="deptTable">
                 <thead>

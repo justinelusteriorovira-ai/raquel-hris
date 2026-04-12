@@ -82,7 +82,7 @@ $templates = $conn->query("SELECT et.*, u.full_name as created_by_name,
 </div>
 
 <?php if ($templates->num_rows === 0): ?>
-    <div class="content-card">
+    <div class="chart-card fadeup">
         <div class="card-body text-center py-5">
             <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);display:inline-flex;align-items:center;justify-content:center;font-size:2rem;color:#388e3c;margin-bottom:16px;">
                 <i class="fas fa-file-alt"></i>
@@ -103,7 +103,7 @@ $templates = $conn->query("SELECT et.*, u.full_name as created_by_name,
             $wclass = abs($kra_w - 100) < 0.01 ? 'bg-success' : 'bg-warning text-dark';
         ?>
             <div class="col-md-6 col-lg-4">
-                <div class="content-card h-100 position-relative" style="transition:transform 0.2s,box-shadow 0.2s;cursor:pointer;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 25px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+                <div class="chart-card fadeup h-100 position-relative" style="transition:transform 0.2s,box-shadow 0.2s;cursor:pointer;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 25px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
                     <!-- Checkbox for Batch Delete -->
                     <div class="position-absolute" style="top: 15px; right: 15px; z-index: 10;">
                         <input class="form-check-input template-checkbox shadow-sm border-secondary cursor-pointer" type="checkbox" name="template_ids[]" value="<?php echo $t['template_id']; ?>" style="width: 1.3rem; height: 1.3rem;" onchange="toggleBatchDeleteBtn()">

@@ -178,15 +178,15 @@ $branches = $conn->query("
     </div>
 </div>
 
-<div class="content-card">
-    <div class="card-header">
+<div class="chart-card fadeup">
+    <div class="cc-header">
         <h5><i class="fas fa-building me-2"></i>All Branches</h5>
         <div class="search-box">
             <i class="fas fa-search search-icon"></i>
             <input type="text" class="form-control form-control-sm" id="searchBranch" placeholder="Search branches...">
         </div>
     </div>
-    <div class="card-body p-0">
+    <div class="cc-body p-0">
         <div class="table-responsive">
             <table class="table table-hover" id="branchTable">
                 <thead>
