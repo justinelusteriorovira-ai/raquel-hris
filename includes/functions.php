@@ -236,7 +236,7 @@ function updateSetting($conn, $key, $value)
  */
 function checkLoginBruteForce($conn, $email, $ip)
 {
-    $lockout_time = 15; // minutes
+    $lockout_time = 5; // minutes
     $max_email_attempts = 5;
     $max_ip_attempts = 10;
 

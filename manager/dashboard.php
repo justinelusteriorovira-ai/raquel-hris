@@ -68,7 +68,7 @@ while ($row = $status_dist->fetch_assoc()) {
 
 // 3. Top Performers Data
 $top_performers = $conn->query("
-    SELECT ev.total_score, ev.performance_level,
+    SELECT ev.total_score, ev.performance_level, e.employee_id,
            CONCAT(e.first_name, ' ', e.last_name) as employee_name, e.job_title, d.department_name
     FROM evaluations ev
     JOIN employees e ON ev.employee_id = e.employee_id
@@ -77,6 +77,30 @@ $top_performers = $conn->query("
     ORDER BY ev.total_score DESC, ev.submitted_date DESC
     LIMIT 5
 ");
+
+// 4. Monthly Trends (last 6 months)
+$monthly_data = [];
+for ($i = 5; $i >= 0; $i--) {
+    $month_label = date('M Y', strtotime("-$i months"));
+    $month_num = date('n', strtotime("-$i months"));
+    $year_num = date('Y', strtotime("-$i months"));
+    $avg_q = $conn->query("SELECT AVG(total_score) as avg_score FROM evaluations WHERE status = 'Approved' AND MONTH(approved_date) = $month_num AND YEAR(approved_date) = $year_num");
+    $avg_val = round($avg_q->fetch_assoc()['avg_score'] ?? 0, 1);
+    $monthly_data[] = ['label' => $month_label, 'value' => $avg_val];
+}
+
+// 5. Branch Comparison
+$branch_comp_data = [];
+$branch_q = $conn->query("SELECT b.branch_name, AVG(ev.total_score) as avg_score
+    FROM evaluations ev
+    LEFT JOIN employees e ON ev.employee_id = e.employee_id
+    LEFT JOIN branches b ON e.branch_id = b.branch_id
+    WHERE ev.status = 'Approved' AND b.branch_name IS NOT NULL
+    GROUP BY b.branch_id, b.branch_name
+    ORDER BY avg_score DESC LIMIT 10");
+while ($row = $branch_q->fetch_assoc()) {
+    $branch_comp_data[] = ['label' => $row['branch_name'], 'value' => round($row['avg_score'], 1)];
+}
 ?>
 
 
@@ -231,6 +255,39 @@ $top_performers = $conn->query("
     }
     .premium-branch-bg .btn-explore:hover {
         background-color: #00c0eb !important;
+    }
+
+    /* Distribution Table Styles */
+    .perf-filter-btn {
+        border: none;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        background: #f8f9fa;
+        color: var(--text-muted);
+    }
+    .perf-filter-btn:hover {
+        background: #eee;
+    }
+    .perf-filter-btn.active {
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+    }
+    .perf-filter-btn.active.outstanding { background: #28a745; color: #fff; }
+    .perf-filter-btn.active.exceeds { background: #17a2b8; color: #fff; }
+    .perf-filter-btn.active.meets { background: #ffc107; color: #000; }
+    .perf-filter-btn.active.needs { background: #dc3545; color: #fff; }
+
+    .chart-label-premium {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        margin-bottom: 15px;
+        display: block;
     }
 </style>
 
@@ -420,10 +477,16 @@ $top_performers = $conn->query("
     <!-- Top Performers -->
     <div class="col-lg-4">
         <div class="content-card h-100">
-            <div class="card-header">
-                <h5><i class="fas fa-trophy text-warning me-2"></i>Top Performers</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-trophy text-warning me-2"></i>Top Performers</h5>
+                <select id="topPerformerBranchFilter" class="form-select form-select-sm" style="width: 150px; font-size: 0.75rem; border-radius: 20px; border-color: #eee;">
+                    <option value="">All Branches</option>
+                    <?php foreach ($branches_insights as $br): ?>
+                        <option value="<?php echo $br['branch_id']; ?>"><?php echo e($br['branch_name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            <div class="card-body p-0" style="height: 330px; overflow-y: auto;">
+            <div class="card-body p-0" style="height: 330px; overflow-y: auto;" id="topPerformerContainer">
                 <?php if ($top_performers->num_rows === 0): ?>
                     <div class="empty-state-card py-5">
                         <i class="fas fa-medal text-muted" style="opacity: 0.1; font-size: 3rem;"></i>
@@ -448,7 +511,11 @@ $top_performers = $conn->query("
                                         <?php echo $initials; ?>
                                     </div>
                                     <div style="min-width: 0; flex: 1;">
-                                        <h6 class="mb-0 fw-bold text-truncate" style="font-size: 0.9rem;"><?php echo e($tp['employee_name']); ?></h6>
+                                        <h6 class="mb-0 fw-bold text-truncate" style="font-size: 0.9rem;">
+                                            <a href="view-employee.php?id=<?php echo $tp['employee_id']; ?>" class="text-decoration-none text-dark hover-primary-text">
+                                                <?php echo e($tp['employee_name']); ?>
+                                            </a>
+                                        </h6>
                                         <small class="text-muted d-block text-truncate" style="font-size: 0.75rem;"><?php echo e($tp['job_title']); ?> &bull; <?php echo e($tp['department_name'] ?? 'N/A'); ?></small>
                                     </div>
                                     <div class="text-end ps-2">
@@ -472,6 +539,71 @@ $top_performers = $conn->query("
             <div class="card-body">
                 <div class="chart-container" style="height:300px;">
                     <canvas id="statusDonutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- COMPREHENSIVE GRAPHS ROW -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="content-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-chart-line me-2 text-primary"></i>Performance Trends</h5>
+                <span class="badge bg-light text-dark fw-normal" style="font-size: 0.7rem;">Average Score (Last 6 Months)</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="trendLineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar me-2 text-info"></i>Branch Comparison</h5>
+            </div>
+            <div class="card-body">
+                <span class="chart-label-premium">Top 10 Performing Branches (Avg %)</span>
+                <div style="height: 270px;">
+                    <canvas id="branchComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PERFORMANCE DISTRIBUTION TABLE ROW -->
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="content-card">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="fas fa-th-list me-2 text-success"></i>Performance Distribution Directory</h5>
+                <div class="d-flex gap-2 filter-group">
+                    <button class="perf-filter-btn outstanding active" onclick="filterDistribution('Outstanding', this)">Outstanding</button>
+                    <button class="perf-filter-btn exceeds" onclick="filterDistribution('Exceeds Expectations', this)">Exceeds</button>
+                    <button class="perf-filter-btn meets" onclick="filterDistribution('Meets Expectations', this)">Meets</button>
+                    <button class="perf-filter-btn needs" onclick="filterDistribution('Needs Improvement', this)">Needs Imp.</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light sticky-top">
+                            <tr>
+                                <th style="font-size: 0.75rem; font-weight: 700;">EMPLOYEE</th>
+                                <th style="font-size: 0.75rem; font-weight: 700;">BRANCH</th>
+                                <th style="font-size: 0.75rem; font-weight: 700;">SCORE</th>
+                                <th style="font-size: 0.75rem; font-weight: 700;">DATE APPROVED</th>
+                            </tr>
+                        </thead>
+                        <tbody id="distributionTableBody">
+                            <!-- AJAX Content -->
+                            <tr><td colspan="4" class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -666,6 +798,31 @@ $top_performers = $conn->query("
             document.getElementById('brProgressBar').style.width = data.percent + '%';
         }
 
+        // --- Top Performer Branch Filter ---
+        const topPerformerFilter = document.getElementById('topPerformerBranchFilter');
+        const topPerformerContainer = document.getElementById('topPerformerContainer');
+
+        if (topPerformerFilter) {
+            topPerformerFilter.addEventListener('change', function() {
+                const branchId = this.value;
+                
+                // Visual feedback
+                topPerformerContainer.style.transition = 'opacity 0.2s ease';
+                topPerformerContainer.style.opacity = '0.4';
+                
+                fetch(`ajax/get-top-performers.php?branch_id=${branchId}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        topPerformerContainer.innerHTML = html;
+                        topPerformerContainer.style.opacity = '1';
+                    })
+                    .catch(err => {
+                        console.error('Error fetching top performers:', err);
+                        topPerformerContainer.style.opacity = '1';
+                    });
+            });
+        }
+
         // Close dropdown on click outside
         document.addEventListener('click', () => {
             dropdown.classList.remove('show');
@@ -708,7 +865,95 @@ $top_performers = $conn->query("
             },
             options: commonOptions
         });
+
+        // 3. Performance Trends (Line Chart)
+        new Chart(document.getElementById('trendLineChart'), {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode(array_column($monthly_data, 'label')); ?>,
+                datasets: [{
+                    label: 'Average Performance Score',
+                    data: <?php echo json_encode(array_column($monthly_data, 'value')); ?>,
+                    borderColor: '#294306',
+                    backgroundColor: 'rgba(41, 67, 6, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#294306',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: false, 
+                        min: 40, max: 100, 
+                        grid: { display: true, drawBorder: false, color: '#f0f0f0' },
+                        ticks: { callback: value => value + '%' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 4. Branch Comparison (Horizontal Bar Chart)
+        new Chart(document.getElementById('branchComparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode(array_column($branch_comp_data, 'label')); ?>,
+                datasets: [{
+                    data: <?php echo json_encode(array_column($branch_comp_data, 'value')); ?>,
+                    backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                    borderColor: '#17a2b8',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    barThickness: 12
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { max: 100, grid: { display: true, color: '#f8f9fa' } },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Load initial distribution table
+        filterDistribution('Outstanding', document.querySelector('.perf-filter-btn.outstanding'));
     });
+
+    function filterDistribution(level, btn) {
+        // Update Buttons
+        document.querySelectorAll('.perf-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const tbody = document.getElementById('distributionTableBody');
+        tbody.style.opacity = '0.4';
+
+        fetch(`ajax/get-distribution-list.php?level=${encodeURIComponent(level)}`)
+            .then(response => response.text())
+            .then(html => {
+                tbody.innerHTML = html;
+                tbody.style.opacity = '1';
+            })
+            .catch(err => {
+                console.error(err);
+                tbody.style.opacity = '1';
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load data.</td></tr>';
+            });
+    }
 </script>
 
 <?php require_once '../includes/footer.php'; ?>

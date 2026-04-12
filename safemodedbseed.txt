@@ -1,0 +1,210 @@
+SET FOREIGN_KEY_CHECKS = 0;
+USE raquel_hris;
+
+-- ============================================
+-- USERS
+-- ============================================
+DELETE FROM `users`; ALTER TABLE `users` AUTO_INCREMENT = 1;
+
+INSERT INTO `users` VALUES 
+('1', 'admin', 'admin@raquel.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main branch Raquel Admin', 'Admin', '1', NULL, '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('2', 'Maridel Merle', 'manager@raquel.com', '$2y$10$s0lw8zV2epVYQgYqJN6xaeA0Do4NKAaRCm.KDgU4M146JemUlAu2q', 'Maridel Merle', 'HR Manager', '1', 'assets/img/avatars/uploads/user_2_1775294738.png', '1', '2026-04-04 17:10:36', '2026-04-04 17:25:38', NULL),
+('3', 'Fred Andrew', 'supervisor@raquel.com', '$2y$10$nbSJVgKm4IiPVJpqvTRi.ORrKmouVZcuEpUi0RWyPKd.AlA75N3Lq', 'Fred Andrew Franca', 'HR Supervisor', '1', 'assets/img/avatars/uploads/user_3_1775294785.jpg', '1', '2026-04-04 17:10:36', '2026-04-04 17:26:25', NULL),
+('4', 'James Mendoza', 'staff@raquel.com', '$2y$10$LyJ5uD7EY7V9RSbHo70nQucFtuHh3Pn/RET7JYHuVKGGEZoStHaia', 'Clark James Mendoza', 'HR Staff', '1', 'assets/img/avatars/uploads/user_4_1775294800.jpg', '1', '2026-04-04 17:10:36', '2026-04-04 17:26:40', NULL);
+
+-- ============================================
+-- BRANCHES
+-- ============================================
+DELETE FROM `branches`; ALTER TABLE `branches` AUTO_INCREMENT = 1;
+
+INSERT INTO `branches` VALUES 
+('1', 'Raquel Pawnshop Main Office', 'San Diego St., Tayabas City, Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('2', 'Paracale', 'Sta Cruz St. Purok Narra, Barangay Poblacion Norte, Paracale, Camarines Norte', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('3', 'San Pascual', 'Aquino Avenue, Brgy. Poblacion San Pascual, Batangas', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('4', 'Laurel', 'Poblacion Tres, Laurel, Batangas', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('5', 'San Andres', 'Fernandez St. Brgy. Poblacion, San Andres, Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('6', 'Mulanay', 'F. Nañadiego st., Brgy. 2 Poblacion, Mulanay Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('7', 'Mogpog', 'Mendez St. Mogpog Marinduque', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('8', 'Tiaong', 'Doña Tating Street, Brgy. Poblacion 2 Tiaong, Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('9', 'Tanauan', '64 Pres. JP Laurel Highway, Tanauan City, Batangas', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('10', 'Real', 'Purok Rose, Poblacion 1, Real Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('11', 'Lopez', 'Judge Olega Street, Cor San Franciso Brgy Rizal Poblacion Lopez, Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('12', 'Cabuyao', 'National Road, Banlic, Cabuyao City, Laguna', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('13', 'Agdangan', 'Aguilar Street Corner Quezon Avenue Pob.1 Agdangan, Quezon', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('14', 'Sta. Cruz, M.', 'Brgy. Maharlika, Sta. Cruz Marinduque', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('15', 'San Pedro', 'National Road, Brgy. Nueva, San Pedro City, Laguna', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('16', 'Los Baños', 'National Road, Batong Malaki, Los Baños Laguna', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('17', 'Lipa City (TM Kalaw)', 'TM. Kalaw St., Brgy. 5, Lipa City, Batangas', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('18', 'Lipa City (Lipa 1)', 'Block 4, Kapitan Simeon St., Barangay 4, Lipa City, Batangas', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('19', 'Dasmarinas', 'Blk K5 Lot 2 San Antonio De Padua II, Dasmarinas Cavite', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('20', 'Lapu-Lapu (Pajo)', 'Quezon National Highway, Pajo Lapu-Lapu City, Cebu', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('21', 'Lapu-Lapu (Rizal)', 'Punta Rizal Street, Lapu-Lapu City, Cebu', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('22', 'Cebu (Labangon)', 'Palmero building, tres de abril Labangon, Cebu City, Cebu', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('23', 'CDO (Capistrano)', 'Corner Capistrano-Yacapin Streets, Brgy. 10, Cagayan de Oro City', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('24', 'CDO (Carmen)', 'Unit 16, President Building, Elipe Park, Kauswagan Road, Carmen, Cagayan de Oro City', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('25', 'Butuan', '1028 Lopez Jaena Street, Brgy. Sikatuna, Butuan City, Agusan del Norte', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL),
+('26', 'Taytay', '233 Rizal Avenue, Brgy. San Juan, Taytay, Rizal', '1', '2026-04-05 12:47:00', '2026-04-05 12:47:00', NULL);
+
+-- ============================================
+-- DEPARTMENTS
+-- ============================================
+DELETE FROM `departments`; ALTER TABLE `departments` AUTO_INCREMENT = 1;
+
+INSERT INTO `departments` VALUES 
+('1', 'Human Resources', 'HR Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('2', 'Accounting', 'Accounting Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('3', 'Operations', 'Operations Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('4', 'IT', 'IT Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('5', 'Marketing', 'Marketing Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('6', 'Sales', 'Sales Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('7', 'Customer Service', 'Customer Service Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('8', 'Finance', 'Finance Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('9', 'Legal', 'Legal Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL),
+('10', 'Research and Development', 'Research and Development Department', '1', '2026-04-04 17:10:36', '2026-04-04 17:10:36', NULL);
+
+-- ============================================
+-- EMPLOYEES
+-- ============================================
+DELETE FROM `employees`; ALTER TABLE `employees` AUTO_INCREMENT = 1;
+
+INSERT INTO `employees` VALUES 
+
+-- ============================================
+-- EMPLOYEE_ADDRESSES
+-- ============================================
+DELETE FROM `employee_addresses`; ALTER TABLE `employee_addresses` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_addresses` VALUES 
+
+-- ============================================
+-- EMPLOYEE_CHILDREN
+-- ============================================
+DELETE FROM `employee_children`; ALTER TABLE `employee_children` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_CONTACTS
+-- ============================================
+DELETE FROM `employee_contacts`; ALTER TABLE `employee_contacts` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_contacts` VALUES 
+
+-- ============================================
+-- EMPLOYEE_DETAILS
+-- ============================================
+DELETE FROM `employee_details`; ALTER TABLE `employee_details` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_details` VALUES 
+
+-- ============================================
+-- EMPLOYEE_DISCLOSURES
+-- ============================================
+DELETE FROM `employee_disclosures`; ALTER TABLE `employee_disclosures` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_disclosures` VALUES 
+
+-- ============================================
+-- EMPLOYEE_EDUCATION
+-- ============================================
+DELETE FROM `employee_education`; ALTER TABLE `employee_education` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_education` VALUES 
+
+-- ============================================
+-- EMPLOYEE_ELIGIBILITY
+-- ============================================
+DELETE FROM `employee_eligibility`; ALTER TABLE `employee_eligibility` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_EMERGENCY_CONTACTS
+-- ============================================
+DELETE FROM `employee_emergency_contacts`; ALTER TABLE `employee_emergency_contacts` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_emergency_contacts` VALUES 
+
+-- ============================================
+-- EMPLOYEE_FAMILY
+-- ============================================
+DELETE FROM `employee_family`; ALTER TABLE `employee_family` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_family` VALUES 
+
+-- ============================================
+-- EMPLOYEE_GOVERNMENT_IDS
+-- ============================================
+DELETE FROM `employee_government_ids`; ALTER TABLE `employee_government_ids` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_government_ids` VALUES 
+
+-- ============================================
+-- EMPLOYEE_LIABILITIES
+-- ============================================
+DELETE FROM `employee_liabilities`; ALTER TABLE `employee_liabilities` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_MEMBERSHIPS
+-- ============================================
+DELETE FROM `employee_memberships`; ALTER TABLE `employee_memberships` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_PERSONAL_PROPERTIES
+-- ============================================
+DELETE FROM `employee_personal_properties`; ALTER TABLE `employee_personal_properties` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_REAL_PROPERTIES
+-- ============================================
+DELETE FROM `employee_real_properties`; ALTER TABLE `employee_real_properties` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_RECOGNITIONS
+-- ============================================
+DELETE FROM `employee_recognitions`; ALTER TABLE `employee_recognitions` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_REFERENCES
+-- ============================================
+DELETE FROM `employee_references`; ALTER TABLE `employee_references` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_SIBLINGS
+-- ============================================
+DELETE FROM `employee_siblings`; ALTER TABLE `employee_siblings` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_siblings` VALUES 
+
+-- ============================================
+-- EMPLOYEE_SKILLS
+-- ============================================
+DELETE FROM `employee_skills`; ALTER TABLE `employee_skills` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_TRAININGS
+-- ============================================
+DELETE FROM `employee_trainings`; ALTER TABLE `employee_trainings` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_VOLUNTARY_WORK
+-- ============================================
+DELETE FROM `employee_voluntary_work`; ALTER TABLE `employee_voluntary_work` AUTO_INCREMENT = 1;
+
+-- ============================================
+-- EMPLOYEE_WORK_EXPERIENCE
+-- ============================================
+DELETE FROM `employee_work_experience`; ALTER TABLE `employee_work_experience` AUTO_INCREMENT = 1;
+
+INSERT INTO `employee_work_experience` VALUES 
+
+-- ============================================
+-- EVALUATION_TEMPLATES
+-- ============================================
+DELETE FROM `evaluation_templates`; ALTER TABLE `evaluation_templates` AUTO_INCREMENT = 1;
+INSERT INTO `evaluation_templates` (template_id, template_name, description, target_position, evaluation_type, kra_weight, behavior_weight, status, created_by) VALUES 
+
+
+-- ============================================
+-- EVALUATION_CRITERIA
+-- ============================================
+DELETE FROM `evaluation_criteria`; ALTER TABLE `evaluation_criteria` AUTO_INCREMENT = 1;
+INSERT INTO `evaluation_criteria` (template_id, section, criterion_name, description, kpi_description, weight, scoring_method, sort_order) VALUES 
+
+SET FOREIGN_KEY_CHECKS = 1;
