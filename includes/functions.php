@@ -149,12 +149,29 @@ function getPerformanceLevel($score)
 }
 
 /**
- * Calculate evaluation total from KRA subtotal and behavior average
- * using the template's weight split (default 80/20)
+ *  ================================================================================
+ * Calculate evaluation total using: weight × rating × average
+ *
+ * Formula: total = (kra_subtotal × behavior_average) / 4.0
+ *
+ *   kra_subtotal    = Σ(criterion_weight/100 × rating)  ← encodes weight × rating
+ *   behavior_average= avg of all behavior ratings        ← the "average" factor
+ *   ÷ 4.0           = normalises the product to 1–4 scale
+ *
+ * Examples (with weights summing correctly):
+ *   Perfect KRA (4.0) × Perfect behavior (4.0) / 4 = 4.00  → Outstanding
+ *   Perfect KRA (4.0) × Avg behavior    (2.0) / 4 = 2.00  → Meets Expectations
+ * ================================================================================
  */
 function calculateEvalTotal($kra_subtotal, $behavior_average, $kra_weight = 80, $behavior_weight = 20)
 {
-    return round(($kra_subtotal * $kra_weight / 100) + ($behavior_average * $behavior_weight / 100), 2);
+    // ── ORIGINAL FORMULA (additive 80/20 weighted sum) ── COMMENTED OUT ──────────
+    // To revert: uncomment the line below and remove / comment the NEW formula line.
+    // return round(($kra_subtotal * $kra_weight / 100) + ($behavior_average * $behavior_weight / 100), 2);
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // NEW FORMULA — weight × rating × average  (÷ 4 keeps result on the 1–4 scale)
+    return round(($kra_subtotal * $behavior_average) / 4.0, 2);
 }
 
 /**

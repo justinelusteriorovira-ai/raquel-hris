@@ -624,7 +624,13 @@ function calculateAllScores() {
     const behAvg = behCount > 0 ? behTotal / behCount : 0;
     if (document.getElementById('behAverage')) document.getElementById('behAverage').textContent = behCount > 0 ? behAvg.toFixed(2) : '-';
 
-    const overall = (kraSubTotal * templateWeights.kra / 100) + (behAvg * templateWeights.behavior / 100);
+    // ── ORIGINAL FORMULA (additive 80/20 weighted sum) ── COMMENTED OUT ──────────
+    // To revert: uncomment the line below and remove / comment the NEW formula line.
+    // const overall = (kraSubTotal * templateWeights.kra / 100) + (behAvg * templateWeights.behavior / 100);
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // NEW FORMULA — weight × rating × average (÷ 4 keeps result on the 1–4 scale)
+    const overall = (kraSubTotal * behAvg) / 4.0;
     
     // Update displays
     const scoreVal = overall.toFixed(2);

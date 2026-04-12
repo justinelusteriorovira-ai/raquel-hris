@@ -1,0 +1,97 @@
+================================================================================
+  RAQUEL HRIS — EVALUATION FORMULA REVERT INSTRUCTIONS
+  Created: 2026-04-12
+================================================================================
+
+BACKGROUND
+----------
+On 2026-04-12, the evaluation total-score formula was changed from the original
+additive 80/20 weighted sum to a multiplicative formula (weight × rating × average).
+
+  ORIGINAL formula : total = (kra_subtotal × kra_weight/100) + (behavior_avg × behavior_weight/100)
+  NEW formula      : total = (kra_subtotal × behavior_average) / 4.0
+
+Both the original and new formulas are present in the code — the original is just
+commented out. To revert, simply uncomment the original line and comment/remove
+the new one in each of the 2 files below.
+
+================================================================================
+FILE 1 — PHP (server-side calculation)
+================================================================================
+File : c:\xampp\htdocs\raquel-hris\includes\functions.php
+Around line 166–176 (inside function calculateEvalTotal)
+
+STEP:
+  1. UNCOMMENT this line (remove the leading // ):
+       // return round(($kra_subtotal * $kra_weight / 100) + ($behavior_average * $behavior_weight / 100), 2);
+
+  2. COMMENT OUT (add // in front of) this line:
+       return round(($kra_subtotal * $behavior_average) / 4.0, 2);
+
+Result should look like:
+  -----------------------------------------------------------------------
+  function calculateEvalTotal($kra_subtotal, $behavior_average, $kra_weight = 80, $behavior_weight = 20)
+  {
+      // ORIGINAL FORMULA restored:
+      return round(($kra_subtotal * $kra_weight / 100) + ($behavior_average * $behavior_weight / 100), 2);
+
+      // NEW formula (disabled):
+      // return round(($kra_subtotal * $behavior_average) / 4.0, 2);
+  }
+  -----------------------------------------------------------------------
+
+================================================================================
+FILE 2 — JavaScript (live preview in browser while filling evaluation form)
+================================================================================
+File : c:\xampp\htdocs\raquel-hris\staff\submit-evaluation.php
+Around line 627–634 (inside function calculateAllScores)
+
+STEP:
+  1. UNCOMMENT this line (remove the leading // ):
+       // const overall = (kraSubTotal * templateWeights.kra / 100) + (behAvg * templateWeights.behavior / 100);
+
+  2. COMMENT OUT (add // in front of) this line:
+       const overall = (kraSubTotal * behAvg) / 4.0;
+
+Result should look like:
+  -----------------------------------------------------------------------
+  // ORIGINAL FORMULA restored:
+  const overall = (kraSubTotal * templateWeights.kra / 100) + (behAvg * templateWeights.behavior / 100);
+
+  // NEW formula (disabled):
+  // const overall = (kraSubTotal * behAvg) / 4.0;
+  -----------------------------------------------------------------------
+
+================================================================================
+AFTER REVERTING
+================================================================================
+- Save both files.
+- Clear browser cache (Ctrl+Shift+R) to reload the JS changes.
+- Test by submitting a new evaluation and checking that the total score
+  uses the 80/20 weighted sum again.
+
+================================================================================
+FORMULA REFERENCE
+================================================================================
+
+ORIGINAL (additive weighted sum):
+  kra_subtotal    = Σ (criterion_weight/100 × rating)   [range: 0–4]
+  behavior_avg    = avg of all behavior ratings          [range: 1–4]
+  total_score     = (kra_subtotal × 0.80) + (behavior_avg × 0.20)
+
+  Example: kra_subtotal=3.0, behavior_avg=3.5
+    total = (3.0 × 0.80) + (3.5 × 0.20) = 2.40 + 0.70 = 3.10
+
+NEW (multiplicative — weight × rating × average):
+  total_score = (kra_subtotal × behavior_average) / 4.0
+
+  Example: kra_subtotal=3.0, behavior_avg=3.5
+    total = (3.0 × 3.5) / 4.0 = 10.5 / 4.0 = 2.625
+
+PERFORMANCE LEVELS (unchanged either way):
+  3.60 – 4.00  → Outstanding
+  2.60 – 3.59  → Exceeds Expectations
+  2.00 – 2.59  → Meets Expectations
+  1.00 – 1.99  → Needs Improvement
+
+================================================================================
