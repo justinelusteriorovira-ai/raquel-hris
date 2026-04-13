@@ -255,7 +255,7 @@ $totalSteps = 12;
         </div>
     </div>
 
-    <div class="text-end">
+    <div class="wizard-footer text-end">
         <button type="button" class="btn btn-primary" onclick="showStep(2)">Next <i
                 class="fas fa-arrow-right ms-2"></i></button>
     </div>
@@ -394,7 +394,7 @@ $totalSteps = 12;
     <button type="button" class="btn-add-row mb-3" onclick="addRepeaterRow('siblingsContainer','sibling')"><i
             class="fas fa-plus me-1"></i> Add Sibling</button>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(1)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(3)">Next <i
@@ -445,7 +445,7 @@ $totalSteps = 12;
     </div>
     <button type="button" class="btn-add-row mb-3" onclick="addEducationRow()"><i class="fas fa-plus me-1"></i> Add
         Education Entry</button>
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(2)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(4)">Next <i
@@ -484,7 +484,7 @@ $totalSteps = 12;
     </div>
     <button type="button" class="btn-add-row mb-3" onclick="addWorkRow()"><i class="fas fa-plus me-1"></i> Add Work
         Entry</button>
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(3)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(5)">Next <i
@@ -523,7 +523,7 @@ $totalSteps = 12;
     </div>
     <button type="button" class="btn-add-row mb-3" onclick="addTrainingRow()"><i class="fas fa-plus me-1"></i> Add
         Training</button>
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(4)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(6)">Next <i
@@ -560,7 +560,7 @@ $totalSteps = 12;
     </div>
     <button type="button" class="btn-add-row mb-3" onclick="addVoluntaryRow()"><i class="fas fa-plus me-1"></i> Add
         Voluntary Work</button>
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(5)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(7)">Next <i
@@ -598,7 +598,7 @@ $totalSteps = 12;
     </div>
     <button type="button" class="btn-add-row mb-3" onclick="addEligibilityRow()"><i class="fas fa-plus me-1"></i> Add
         License/Eligibility</button>
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(6)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(8)">Next <i
@@ -653,7 +653,7 @@ $totalSteps = 12;
         onclick="addSimpleRow('membershipsContainer','membership_org','Organization Name')"><i
             class="fas fa-plus me-1"></i> Add Membership</button>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(7)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(9)">Next <i
@@ -678,7 +678,7 @@ $totalSteps = 12;
     <button type="button" class="btn-add-row mb-3" onclick="addLiabilityRow()"><i class="fas fa-plus me-1"></i> Add
         Liability</button>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(8)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(10)">Next <i
@@ -752,7 +752,7 @@ $totalSteps = 12;
         </div>
     <?php endforeach; ?>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(9)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(11)">Next <i
@@ -786,7 +786,7 @@ $totalSteps = 12;
         </div>
     <?php endfor; ?>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(10)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="button" class="btn btn-primary" onclick="showStep(12)">Next <i
@@ -858,6 +858,18 @@ $totalSteps = 12;
         </div>
     </div>
 
+    <!-- Contract Dates (Visible for Probationary / Contractual) -->
+    <div class="row" id="contractDatesRow" style="display: <?php echo in_array(($e['employment_status'] ?? 'Regular'), ['Probationary', 'Contractual']) ? 'flex' : 'none'; ?>;">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Date Start (Contract/Probation)</label>
+            <input type="date" class="form-control" name="contract_start_date" value="<?php echo $v('contract_start_date'); ?>">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Date Ended (Contract/Probation)</label>
+            <input type="date" class="form-control" name="contract_end_date" value="<?php echo $v('contract_end_date'); ?>">
+        </div>
+    </div>
+
     <?php if ($isEdit): ?>
         <div class="row">
             <div class="col-md-4 mb-3">
@@ -888,7 +900,7 @@ $totalSteps = 12;
         </div>
     </div>
 
-    <div class="d-flex justify-content-between">
+    <div class="wizard-footer d-flex justify-content-between">
         <button type="button" class="btn btn-secondary" onclick="showStep(11)"><i
                 class="fas fa-arrow-left me-2"></i>Back</button>
         <button type="submit" class="btn btn-success"><i

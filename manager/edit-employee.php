@@ -165,6 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergency_contact_name = trim($_POST['emergency_contact_name'] ?? '');
     $emergency_contact_relationship = trim($_POST['emergency_contact_relationship'] ?? '');
     $emergency_contact_number = trim($_POST['emergency_contact_number'] ?? '');
+    $contract_start_date = !empty($_POST['contract_start_date']) ? $_POST['contract_start_date'] : null;
+    $contract_end_date = !empty($_POST['contract_end_date']) ? $_POST['contract_end_date'] : null;
 
     if (empty($first_name) || empty($last_name) || empty($hire_date) || empty($job_title) || empty($department_id)) {
         redirectWith(BASE_URL . "/manager/edit-employee.php?id=$eid", 'danger', 'Please fill in all required fields.');
@@ -216,15 +218,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             first_name=?, last_name=?, middle_name=?, name_extension=?,
             date_of_birth=?, place_of_birth=?, gender=?, civil_status=?,
             hire_date=?, job_title=?, department_id=?, branch_id=?, 
-            employment_status=?, employment_type=?, is_active=?";
+            employment_status=?, employment_type=?, contract_start_date=?, contract_end_date=?, is_active=?";
 
         if ($new_filename)
             $sql .= ", profile_picture=?";
         $sql .= " WHERE employee_id=?";
 
         $stmt = $conn->prepare($sql);
-        $types = "ssssssssssiissi" . ($new_filename ? "s" : "") . "i";
-        $params = [$first_name, $last_name, $middle_name, $name_extension, $date_of_birth, $place_of_birth, $gender, $civil_status, $hire_date, $job_title, $department_id, $branch_id, $employment_status, $employment_type, $is_active];
+        $types = "ssssssssssiissssi" . ($new_filename ? "s" : "") . "i";
+        $params = [$first_name, $last_name, $middle_name, $name_extension, $date_of_birth, $place_of_birth, $gender, $civil_status, $hire_date, $job_title, $department_id, $branch_id, $employment_status, $employment_type, $contract_start_date, $contract_end_date, $is_active];
         if ($new_filename)
             $params[] = $new_filename;
         $params[] = $eid;

@@ -7,10 +7,10 @@ USE raquel_hris;
 DELETE FROM `users`; ALTER TABLE `users` AUTO_INCREMENT = 1;
 
 INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `full_name`, `role`, `branch_id`, `profile_picture`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES 
-(1, 'admin', 'admin@raquel.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main branch Raquel Admin', 'Admin', 1, 'assets/img/avatars/default.png', 1, NOW(), NOW(), NULL),
-(2, 'Maridel Merle', 'manager@raquel.com', '$2y$10$s0lw8zV2epVYQgYqJN6xaeA0Do4NKAaRCm.KDgU4M146JemUlAu2q', 'Maridel Merle', 'HR Manager', 1, 'assets/img/avatars/uploads/user_2_1775294738.png', 1, NOW(), NOW(), NULL),
-(3, 'Fred Andrew', 'supervisor@raquel.com', '$2y$10$nbSJVgKm4IiPVJpqvTRi.ORrKmouVZcuEpUi0RWyPKd.AlA75N3Lq', 'Fred Andrew Franca', 'HR Supervisor', 1, 'assets/img/avatars/uploads/user_3_1775294785.jpg', 1, NOW(), NOW(), NULL),
-(4, 'James Mendoza', 'staff@raquel.com', '$2y$10$LyJ5uD7EY7V9RSbHo70nQucFtuHh3Pn/RET7JYHuVKGGEZoStHaia', 'Clark James Mendoza', 'HR Staff', 1, 'assets/img/avatars/uploads/user_4_1775294800.jpg', 1, NOW(), NOW(), NULL);
+(1, 'admin', 'admin@raquel.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Main branch Raquel Admin', 'Admin', 1, null, 1, NOW(), NOW(), NULL),
+(2, 'HR Manager', 'manager@raquel.com', '$2y$10$s0lw8zV2epVYQgYqJN6xaeA0Do4NKAaRCm.KDgU4M146JemUlAu2q', 'HR Manager', 'HR Manager', 1, null, 1, NOW(), NOW(), NULL),
+(3, 'HR Supervisor', 'supervisor@raquel.com', '$2y$10$nbSJVgKm4IiPVJpqvTRi.ORrKmouVZcuEpUi0RWyPKd.AlA75N3Lq', 'HR Supervisor', 'HR Supervisor', 1, null, 1, NOW(), NOW(), NULL),
+(4, 'HR Staff', 'staff@raquel.com', '$2y$10$LyJ5uD7EY7V9RSbHo70nQucFtuHh3Pn/RET7JYHuVKGGEZoStHaia', 'HR Staff', 'HR Staff', 1, null, 1, NOW(), NOW(), NULL);
 
 -- ============================================
 -- BRANCHES

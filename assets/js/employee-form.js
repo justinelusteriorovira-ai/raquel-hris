@@ -245,4 +245,20 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }, true); // Use capture phase
     }
+
+    // Toggle contract dates visibility
+    const statusSelect = document.querySelector('select[name="employment_status"]');
+    const contractDatesRow = document.getElementById('contractDatesRow');
+    if (statusSelect && contractDatesRow) {
+        const checkStatus = () => {
+            if (['Probationary', 'Contractual'].includes(statusSelect.value)) {
+                contractDatesRow.style.display = 'flex';
+            } else {
+                contractDatesRow.style.display = 'none';
+            }
+        };
+        statusSelect.addEventListener('change', checkStatus);
+        // Run once on load for edit mode
+        checkStatus();
+    }
 });

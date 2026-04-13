@@ -67,6 +67,7 @@ $branches = [];
 while ($r = $branches_res->fetch_assoc()) $branches[] = $r['branch_name'];
 
 $statuses = ['Regular', 'Probationary', 'Contractual'];
+$selected_branch = $_GET['branch'] ?? '';
 ?>
 
 <style>
@@ -236,7 +237,7 @@ $statuses = ['Regular', 'Probationary', 'Contractual'];
             <select id="filterBranch">
                 <option value="">All Branches</option>
                 <?php foreach ($branches as $br): ?>
-                    <option value="<?php echo e($br); ?>"><?php echo e($br); ?></option>
+                    <option value="<?php echo e($br); ?>" <?php echo ($selected_branch === $br) ? 'selected' : ''; ?>><?php echo e($br); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -608,6 +609,9 @@ function handleNoResults(totalItems, filterInput, tbody) {
 }
 
 // Initial Render on Load
-document.addEventListener("DOMContentLoaded", renderTable);
+document.addEventListener("DOMContentLoaded", function() {
+    renderTable();
+    updateFilterChips();
+});
 </script>
 

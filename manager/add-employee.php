@@ -264,6 +264,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
     $emergency_contact_name = trim($_POST['emergency_contact_name'] ?? '');
     $emergency_contact_relationship = trim($_POST['emergency_contact_relationship'] ?? '');
     $emergency_contact_number = trim($_POST['emergency_contact_number'] ?? '');
+    $contract_start_date = !empty($_POST['contract_start_date']) ? $_POST['contract_start_date'] : null;
+    $contract_end_date = !empty($_POST['contract_end_date']) ? $_POST['contract_end_date'] : null;
 
     // Profile picture
     $profile_picture = null;
@@ -318,12 +320,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
             first_name, last_name, middle_name, name_extension,
             date_of_birth, place_of_birth, gender, civil_status,
             hire_date, job_title, department_id, branch_id, 
-            employment_status, employment_type, profile_picture
-        ) VALUES (?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?)";
+            employment_status, employment_type, contract_start_date, contract_end_date, profile_picture
+        ) VALUES (?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?,?)";
 
         $stmt = $conn->prepare($sql);
         $stmt->bind_param(
-            "ssssssssssiisss",
+            "ssssssssssiisssss",
             $first_name,
             $last_name,
             $middle_name,
@@ -338,6 +340,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['import_csv'])) {
             $branch_id,
             $employment_status,
             $employment_type,
+            $contract_start_date,
+            $contract_end_date,
             $profile_picture
         );
         $stmt->execute();

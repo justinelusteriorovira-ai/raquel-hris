@@ -652,6 +652,25 @@ a {
     color: white;
 }
 
+/* Sticky Wizard Footer Navigation */
+.wizard-footer {
+    position: sticky;
+    bottom: -20px;
+    background: #fff;
+    padding: 15px 10px;
+    margin: 20px -20px -20px -20px;
+    border-top: 1px solid #eee;
+    z-index: 10;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Ensure the buttons looks good in sticky footer */
+.wizard-footer .btn {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
 /* Repeater row styles for dynamic add/remove */
 .repeater-row {
     background: var(--bg-gray);
@@ -2195,6 +2214,11 @@ a {
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+.chart-card.allow-overflow {
+    overflow: visible;
+    z-index: 10;
 }
 .chart-card .cc-header {
     padding: 16px 20px 12px;

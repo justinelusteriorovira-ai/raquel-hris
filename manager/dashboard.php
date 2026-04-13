@@ -401,7 +401,7 @@ while ($row = $branch_q->fetch_assoc()) {
 <!-- Branch Distribution Insights (Professional Section) -->
 <div class="row g-4 mb-4 branch-insights-section">
     <div class="col-lg-4">
-        <div class="chart-card h-100">
+        <div class="chart-card allow-overflow h-100">
             <div class="cc-header">
                 <h5><i class="fas fa-map-marker-alt me-2"></i>Select Branch</h5>
             </div>
@@ -475,7 +475,7 @@ while ($row = $branch_q->fetch_assoc()) {
                     </div>
                 </div>
 
-                <a href="employees.php" class="btn btn-primary btn-explore">
+                <a href="employees.php" class="btn btn-primary btn-explore" id="viewBranchEmployeesLink">
                     <i class="fas fa-users me-2"></i>View Branch Staff
                 </a>
             </div>
@@ -820,6 +820,7 @@ while ($row = $branch_q->fetch_assoc()) {
             document.getElementById('brPercentDisplay').innerText = data.percent;
             document.getElementById('brDensityText').innerText = data.percent;
             document.getElementById('brProgressBar').style.width = data.percent + '%';
+            document.getElementById('viewBranchEmployeesLink').href = `employees.php?branch=${encodeURIComponent(data.name)}`;
         }
 
         // --- Top Performer Branch Filter ---

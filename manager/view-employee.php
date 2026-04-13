@@ -120,9 +120,9 @@ $career_goals = $conn->query("
 require_once '../includes/header.php';
 
 // Helper
-function field($label, $value)
+function field($label, $value, $escape = true)
 {
-    $val = !empty($value) ? e($value) : '<span class="text-muted">N/A</span>';
+    $val = !empty($value) ? ($escape ? e($value) : $value) : '<span class="text-muted">N/A</span>';
     return "<div class='row mb-2'><div class='col-sm-4 text-muted small'>$label</div><div class='col-sm-8 fw-semibold small'>$val</div></div>";
 }
 function yn($v)
@@ -163,8 +163,23 @@ function yn($v)
                     <?php echo e($emp['first_name'] . ' ' . ($emp['middle_name'] ? $emp['middle_name'] . ' ' : '') . $emp['last_name'] . ($emp['name_extension'] ? ' ' . $emp['name_extension'] : '')); ?>
                 </h5>
                 <p class="text-muted mb-2"><?php echo e($emp['job_title']); ?></p>
-                <span
-                    class="badge <?php echo $emp['is_active'] ? 'bg-success' : 'bg-danger'; ?> px-3 py-2"><?php echo $emp['is_active'] ? 'Active' : 'Inactive'; ?></span>
+                <div class="d-flex justify-content-center gap-2 mb-2">
+                    <span class="badge <?php echo $emp['is_active'] ? 'bg-success' : 'bg-danger'; ?> px-2 py-1"><?php echo $emp['is_active'] ? 'Active' : 'Inactive'; ?></span>
+                    <span class="badge bg-primary px-2 py-1"><?php echo e($emp['employment_status']); ?></span>
+                </div>
+                <?php if (in_array($emp['employment_status'], ['Probationary', 'Contractual'])): ?>
+                    <div class="alert alert-info py-2 px-2 mt-2 mb-0 border-start border-4 border-info shadow-sm" style="font-size: 0.75rem;">
+                        <div class="fw-bold text-info mb-1"><i class="fas fa-clock me-1"></i>Contract Period</div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Start:</span>
+                            <span class="fw-bold"><?php echo formatDate($emp['contract_start_date']); ?></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">End:</span>
+                            <span class="fw-bold"><?php echo formatDate($emp['contract_end_date']); ?></span>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <hr class="my-3">
                 <div class="text-start small">
                     <p class="mb-1"><i class="fas fa-envelope text-muted me-2"
